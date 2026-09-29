@@ -1,0 +1,19 @@
+fallfloor enterprise — a reference design by AI-Native Solutions. MIT licence (see LICENSE).
+Powered by the Konomi architecture, created by Thomas Frumkin.
+
+This is a reference design for a MODELLED company. It is not a client engagement. No client, name, quote or
+testimonial is used. Volumes, team sizes, compliance days and the day rate are labelled assumptions.
+
+Go/no-go method (dualmap.mjs, vendored with its tests from sjgant80-hub/dual-map @ 3ca840f):
+  Gary W. Floyd, Lumiea Systems Research Division — ThunderStruck Service LLC — "From GEP Stabilization to
+  Dual-Map Ethical Reasoning," Derivation v0.2 (2026).
+
+Evidence: fallfloor (https://github.com/sjgant80-hub/fallfloor @ e4d3b91), a receipted run on public datasets —
+  Banking77 (PolyAI, CC BY 4.0), SMS Spam Collection v.1 (Tiago A. Almeida and José María Gómez Hidalgo, CC BY 4.0),
+  CLINC150 (Larson et al., CC BY 3.0).
+
+Law quoted from EUR-Lex (Regulation (EU) 2024/1689, Regulation (EU) 2026/1744, Regulation (EU) 2016/679),
+legislation.gov.uk (UK GDPR; SI 2026/82 — Crown copyright, Open Government Licence v3.0), the ICO and the EDPB.
+Statistics: ONS ASHE 2025 and DESNZ Quarterly Energy Prices (Open Government Licence v3.0).
+Third-party prices belong to their publishers; each is linked with the date it was checked in sources/prices.json.
+Models referenced: Qwen2.5 Instruct (Qwen team, Alibaba Cloud), Apache 2.0.

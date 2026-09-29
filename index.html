@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>fallfloor enterprise — local-first AI for a whole company</title>
+<meta name="description" content="A CTO-grade reference design for running a modelled 1,200-person bank's AI on machines it owns: architecture, capacity, a 5-year cost comparison against the corporate cloud model with every price sourced, a GDPR / UK GDPR / EU AI Act compliance map quoting the law, a sealed go/no-go board, the team and the rollout." />
+<link rel="canonical" href="https://sjgant80-hub.github.io/fallfloor-enterprise/" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="fallfloor enterprise — local-first AI for a whole company" />
+<meta property="og:description" content="Own the data, own the compute: the full design, costed against Copilot-style seats and cloud APIs, mapped to GDPR and the EU AI Act, gated on receipted evidence." />
+<meta property="og:url" content="https://sjgant80-hub.github.io/fallfloor-enterprise/" />
+<meta name="theme-color" content="#0b0d10" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    { "@type": "WebApplication", "name": "fallfloor enterprise", "url": "https://sjgant80-hub.github.io/fallfloor-enterprise/", "applicationCategory": "BusinessApplication", "operatingSystem": "Any modern browser",
+      "description": "A reference design for local-first enterprise AI: architecture, capacity, a sourced 5-year cost comparison with the corporate cloud model, a GDPR / UK GDPR / EU AI Act compliance map, a sealed dual-map go/no-go board, the operating model and the rollout.",
+      "creator": { "@type": "Organization", "name": "AI-Native Solutions", "url": "https://www.ai-nativesolutions.com/" }, "license": "https://opensource.org/licenses/MIT" },
+    { "@type": "FAQPage", "mainEntity": [
+      { "@type": "Question", "name": "Is this a real client?", "acceptedAnswer": { "@type": "Answer", "text": "No. It is a reference design for a modelled UK digital bank. Its measured evidence comes from fallfloor, a receipted run on public datasets." } },
+      { "@type": "Question", "name": "What does local-first remove under GDPR?", "acceptedAnswer": { "@type": "Answer", "text": "For inference, it removes the AI processor (Article 28) and international transfers (Chapter V), because prompts and answers never leave the company's machines. Lawful basis, transparency, individuals' rights, DPIAs, accuracy and security stay with the company as controller." } },
+      { "@type": "Question", "name": "When do the EU AI Act high-risk rules apply?", "acceptedAnswer": { "@type": "Answer", "text": "From 2 December 2027 for Annex III systems such as credit scoring, and 2 August 2028 for Annex I systems, after the Digital Omnibus on AI (Regulation (EU) 2026/1744). Article 50 transparency has applied since 2 August 2026 and AI literacy since 2 February 2025." } },
+      { "@type": "Question", "name": "Where do the prices come from?", "acceptedAnswer": { "@type": "Answer", "text": "Public list pages, each linked with the date it was checked (29 September 2026), compared net of VAT. Electricity is DESNZ's non-domestic average; salaries are ONS ASHE medians. Everything else is labelled as an estimate or an assumption and can be changed on the page." } },
+      { "@type": "Question", "name": "Is local-first cheaper?", "acceptedAnswer": { "@type": "Answer", "text": "In this model, over five years, yes: the saving is mostly the seat licences. The largest line on both sides is the people who run it, and the page shows how much of each total rests on assumptions. The corporate side buys frontier-model quality that the local side does not claim." } }
+    ] }
+  ]
+}
+</script>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--panel2:#eef1f5;--ink:#10151c;--muted:#566172;--faint:#8a94a3;--line:#dde3ea;--accent:#0e9f7e;--accent2:#2f6fed;--warn:#c47d0a;--bad:#d2413a;--good:#0e9f7e;--mono:ui-monospace,SFMono-Regular,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;--r:14px;--maxw:1120px}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0b0d10;--panel:#12161c;--panel2:#171c24;--ink:#e7ecf2;--muted:#9aa5b4;--faint:#66707e;--line:#232a34;--accent:#39d0a8;--accent2:#6d9bff;--warn:#e8a93a;--bad:#f06a60;--good:#39d0a8}}
+:root[data-theme=dark]{--bg:#0b0d10;--panel:#12161c;--panel2:#171c24;--ink:#e7ecf2;--muted:#9aa5b4;--faint:#66707e;--line:#232a34;--accent:#39d0a8;--accent2:#6d9bff;--warn:#e8a93a;--bad:#f06a60;--good:#39d0a8}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--accent2)}code,.mono{font-family:var(--mono);font-size:.88em}
+code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:.05em .35em;overflow-wrap:anywhere}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 18px}
+nav.top{position:sticky;top:0;z-index:5;background:color-mix(in oklab,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav.top .wrap{display:flex;align-items:center;gap:14px;min-height:54px}
+nav.top b{font-size:1.02rem;letter-spacing:-.01em;white-space:nowrap}nav.top .links{display:flex;gap:12px;font-size:.84rem;overflow-x:auto;scrollbar-width:none;flex:1}nav.top .links::-webkit-scrollbar{display:none}nav.top .links a{color:var(--muted);text-decoration:none;white-space:nowrap}nav.top .links a:hover{color:var(--ink)}
+.theme{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:.8rem}
+header.hero{padding:54px 0 18px}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-size:clamp(1.9rem,5vw,3rem);line-height:1.1;letter-spacing:-.03em;margin:.35rem 0 .7rem;font-weight:800}
+h2{font-size:clamp(1.35rem,3vw,1.85rem);letter-spacing:-.02em;margin:0 0 .4rem;font-weight:800}
+h3{font-size:1.05rem;margin:0 0 .3rem}
+.lede{font-size:1.1rem;color:var(--muted);max-width:76ch}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.pill{font-family:var(--mono);font-size:.74rem;border:1px solid var(--line);border-radius:20px;padding:.28rem .7rem;background:var(--panel);color:var(--muted)}
+.pill b{color:var(--ink)}
+section{padding:28px 0}section+section{border-top:1px solid var(--line)}
+.step{font-family:var(--mono);font-size:.78rem;color:var(--accent);font-weight:700;letter-spacing:.08em}
+.sub{color:var(--muted);max-width:78ch;margin:.2rem 0 1rem}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}.g4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+.card p{margin:.3rem 0}.k{font-family:var(--mono);font-size:.72rem;color:var(--faint);text-transform:uppercase;letter-spacing:.1em}
+.big{font-size:1.75rem;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.note{color:var(--muted);font-size:.9rem;border-left:3px solid var(--line);padding:.2rem 0 .2rem .8rem;margin:.8rem 0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:700}
+td.n{font-family:var(--mono);white-space:nowrap}.tw{overflow-x:auto}
+.chip{font-family:var(--mono);font-size:.72rem;font-weight:700;padding:.1rem .45rem;border-radius:6px;display:inline-block;white-space:nowrap;border:1px solid var(--line);color:var(--muted)}
+.chip.removed,.chip.PASS,.chip.list-price,.chip.measured{color:var(--good);border-color:color-mix(in oklab,var(--good) 45%,var(--line));background:color-mix(in oklab,var(--good) 10%,transparent)}
+.chip.eased{color:var(--accent2);border-color:color-mix(in oklab,var(--accent2) 45%,var(--line))}
+.chip.yours,.chip.PENDING,.chip.estimate,.chip.assumption{color:var(--warn);border-color:color-mix(in oklab,var(--warn) 45%,var(--line))}
+.chip.BLOCK,.chip.shared{color:var(--bad);border-color:color-mix(in oklab,var(--bad) 45%,var(--line))}
+.btn{padding:.5rem .95rem;border-radius:10px;border:1px solid var(--accent2);background:var(--accent2);color:#fff;font-weight:600;cursor:pointer;font-family:var(--sans);font-size:.9rem}
+.btn.ghost{background:var(--panel);color:var(--ink);border-color:var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:.6rem 0}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:.8rem;color:var(--muted)}
+input,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:.4rem .55rem;max-width:100%}
+label.f{max-width:100%;min-width:0}
+input[type=number]{width:120px}
+details{margin:.4rem 0}summary{cursor:pointer;font-weight:600}
+.bar{height:10px;border-radius:5px;background:var(--panel2);overflow:hidden;display:flex}.bar span{display:block;height:100%}
+svg text{font-family:var(--sans)}
+#archSvg{min-width:720px}
+footer{padding:34px 0 60px;color:var(--muted);font-size:.86rem;border-top:1px solid var(--line)}
+.ok{color:var(--good)}.no{color:var(--bad)}
+@media (max-width:640px){nav.top{position:static}}
+</style>
+</head>
+<body>
+<nav class="top"><div class="wrap">
+  <b>fallfloor enterprise</b>
+  <div class="links"><a href="#summary">Summary</a><a href="#case">The case</a><a href="#architecture">Architecture</a><a href="#capacity">Capacity</a><a href="#cost">Cost</a><a href="#compliance">Compliance</a><a href="#own">Own it</a><a href="#board">Go / no-go</a><a href="#team">Team</a><a href="#rollout">Rollout</a><a href="#risks">Risks</a><a href="#evidence">Evidence</a><a href="#limits">Limits</a></div>
+  <button class="theme" id="themeBtn" type="button">Theme</button>
+</div></nav>
+
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">Reference design · modelled company · verified law</div>
+  <h1>Run the whole company's AI on machines it owns.</h1>
+  <p class="lede">The full design for a modelled 1,200-person UK bank with EU customers: the architecture, the capacity, a five-year cost against the corporate model (seats and cloud APIs) with every price sourced, a map of what GDPR, UK GDPR and the EU AI Act ask on each stack, a sealed go/no-go board built from receipted evidence, the team and the rollout. Laid out for the CTO.</p>
+  <div class="pills" id="heroPills"><span class="pill">Not a real client · no names, quotes or testimonials</span><span class="pill">Evidence: fallfloor's receipted run</span><span class="pill">Prices: public list pages, checked 2026-09-29</span><span class="pill">Law: primary text, checked 2026-09-29</span></div>
+</header>
+
+<section id="summary">
+  <div class="step">THE DECISION ON ONE PAGE</div>
+  <h2>What the CTO is being asked to sign.</h2>
+  <div class="grid g4" id="summaryCards"></div>
+  <ul class="sub" id="summaryPoints"></ul>
+</section>
+
+<section id="case">
+  <div class="step">1 · LOCAL-FIRST VS THE CORPORATE MODEL</div>
+  <h2>Own the data, own the compute — and own the work.</h2>
+  <p class="sub">The corporate model rents intelligence per seat and per token from a vendor's cloud. Local-first runs open models on the laptops the company already owns and a small rack of its own inference nodes. Neither is free; they fail differently and they are governed differently.</p>
+  <div class="card"><div class="tw"><table id="caseTable"><thead><tr><th></th><th>Local-first</th><th>Corporate (seats + cloud APIs)</th></tr></thead><tbody></tbody></table></div></div>
+</section>
+
+<section id="architecture">
+  <div class="step">2 · ARCHITECTURE</div>
+  <h2>Ten layers, one boundary.</h2>
+  <p class="sub">Everything that touches personal data runs inside the company's network. The only door out is for fetching model weights, which carry no personal data.</p>
+  <div class="card" style="overflow-x:auto">
+    <svg id="archSvg" viewBox="0 0 900 360" width="100%" role="img" aria-label="Architecture: the floor of laptops and the core nodes inside the company boundary, joined by the mesh and the desk, with receipts, gates, knowledge, identity and integrations; one outbound door for model weights.">
+      <g id="archG"></g>
+    </svg>
+  </div>
+  <div class="grid g2" id="archCards" style="margin-top:14px"></div>
+</section>
+
+<section id="capacity">
+  <div class="step">3 · CAPACITY</div>
+  <h2>What the work needs, from measured seconds and published specs.</h2>
+  <p class="sub">The floor's seconds per item are measured (fallfloor, one laptop). The core node's are a planning figure: generation is bound by memory bandwidth, so tokens per second ≤ bandwidth ÷ model size, at an assumed efficiency. Phase 1 measures it before more than one node is bought.</p>
+  <div class="card"><div class="tw"><table id="capWorkloads"><thead><tr><th>Workload</th><th>Tier</th><th>Per month (year 1)</th><th>Seconds per item</th><th>Basis</th></tr></thead><tbody></tbody></table></div>
+  <div class="tw"><table id="capYears" style="margin-top:12px"><thead><tr><th>Year</th><th>Floor hours / month</th><th>Share of the enrolled floor</th><th>Core hours / month</th><th>Core nodes (N + spare)</th></tr></thead><tbody></tbody></table></div>
+  <p class="note" id="capNote"></p></div>
+</section>
+
+<section id="cost">
+  <div class="step">4 · FIVE-YEAR COST, BOTH SIDES</div>
+  <h2>Every line with its source — and how much of each total is an assumption.</h2>
+  <p class="sub">Cash per year, net of VAT. List prices are linked with the date they were checked; measured figures come from fallfloor's receipts; estimates and assumptions say why. Change the choices and the model recomputes with the same kernel CI tests.</p>
+  <div class="card">
+    <div class="row" id="costInputs">
+      <label class="f">Corporate seat product<select id="inSeat"></select></label>
+      <label class="f">Share of knowledge workers with a seat<input type="number" id="inSeatShare" min="0" max="1" step="0.05" /></label>
+      <label class="f">Cloud model for automated work<select id="inApi"></select></label>
+      <label class="f">Volume growth per year<input type="number" id="inGrowth" min="-0.5" max="5" step="0.05" /></label>
+      <label class="f">Core efficiency (share of bandwidth ceiling)<input type="number" id="inEff" min="0.05" max="1" step="0.05" /></label>
+      <label class="f">Staff on-cost multiplier<input type="number" id="inOnCost" min="1" max="3" step="0.05" /></label>
+    </div>
+    <div class="grid g3" id="costCards" style="margin:10px 0"></div>
+    <div class="tw"><table id="costYears"><thead><tr><th>Year</th><th>Local-first</th><th>Corporate</th><th>Cumulative local</th><th>Cumulative corporate</th></tr></thead><tbody></tbody></table></div>
+    <div id="costBasis" style="margin-top:12px"></div>
+    <details style="margin-top:10px"><summary>Every line, with its basis and source</summary><div class="tw"><table id="costLines"><thead><tr><th>Side</th><th>Line</th><th>5-year total</th><th>Basis</th><th>Source</th></tr></thead><tbody></tbody></table></div></details>
+    <p class="note" id="costWarn"></p>
+  </div>
+</section>
+
+<section id="compliance">
+  <div class="step">5 · COMPLIANCE — GDPR, UK GDPR, EU AI ACT</div>
+  <h2>What local-first solves, and what stays yours.</h2>
+  <p class="sub">For each workload and each stack: which duties apply, whether they are in force today, and what the stack does to them. Every duty quotes the primary text and links it, checked 2026-09-29. The Digital Omnibus on AI moved the high-risk dates; they are shown as they now stand.</p>
+  <div class="grid g2" id="solveCards"></div>
+  <div class="card" style="margin-top:14px">
+    <div class="row"><label class="f">Workload<select id="inWorkload"></select></label><span class="pill" id="roleLocal"></span></div>
+    <div class="tw"><table id="dutyTable"><thead><tr><th>Duty</th><th>Local-first</th><th>Cloud API</th><th>Seat product</th><th>In force</th></tr></thead><tbody></tbody></table></div>
+  </div>
+  <h3 style="margin-top:20px">The dates</h3>
+  <div class="card"><div class="tw"><table id="dateTable"><thead><tr><th>From</th><th>What applies</th><th>Where it says so</th></tr></thead><tbody></tbody></table></div></div>
+</section>
+
+<section id="own">
+  <div class="step">6 · OWN THE DATA, OWN THE COMPUTE</div>
+  <h2>What the company holds at the end of it.</h2>
+  <div class="grid g3" id="ownCards"></div>
+</section>
+
+<section id="board">
+  <div class="step">7 · GO / NO-GO</div>
+  <h2>Each deployment decision, gated on the evidence — and sealed.</h2>
+  <p class="sub">Every decision is a dual-map case: the positive map (what the evidence supports) beside a negative map (the evidence-supported ways it fails). One severe, evidence-backed failure <b>BLOCKs</b> and no amount of positive evidence buys it back; an unmeasured risk holds it at <b>PENDING</b>, never a block. The evidence is fallfloor's receipted run; the thresholds are this design's policy, and you can change them.</p>
+  <div class="card">
+    <div class="row" id="policyInputs"></div>
+    <div class="tw"><table id="boardTable"><thead><tr><th>Decision</th><th>Verdict</th><th>E⁺ / E⁻</th><th>Why</th></tr></thead><tbody></tbody></table></div>
+    <div class="row"><button class="btn" id="btnVerify" type="button">Verify every receipt</button><button class="btn ghost" id="btnForge" type="button">Try to forge one</button><span class="mono" id="verifyOut"></span></div>
+    <p class="note">Method: Gary W. Floyd, Lumiea Systems Research Division — ThunderStruck Service LLC — "From GEP Stabilization to Dual-Map Ethical Reasoning," Derivation v0.2 (dual-map gate, non-compensating negative map, PASS / BLOCK / PENDING, sealed receipts).</p>
+  </div>
+</section>
+
+<section id="team">
+  <div class="step">8 · OPERATING MODEL</div>
+  <h2>Who runs it.</h2>
+  <div class="grid g2" id="teamCards"></div>
+  <ul class="sub" id="operatingList"></ul>
+</section>
+
+<section id="rollout">
+  <div class="step">9 · ROLLOUT</div>
+  <h2>Five phases, a gate between each.</h2>
+  <div class="grid g2" id="rolloutCards"></div>
+</section>
+
+<section id="risks">
+  <div class="step">10 · RISKS</div>
+  <h2>What could go wrong, and who owns it.</h2>
+  <div class="card"><div class="tw"><table id="riskTable"><thead><tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th><th>Owner</th></tr></thead><tbody></tbody></table></div></div>
+</section>
+
+<section id="evidence">
+  <div class="step">11 · THE EVIDENCE</div>
+  <h2>Measured, not promised.</h2>
+  <div class="card" id="evidenceBody"></div>
+</section>
+
+<section id="limits">
+  <div class="step">WHAT THIS SHOWS, AND WHAT IT DOESN'T</div>
+  <h2>Limits, stated plainly.</h2>
+  <ul class="sub" id="limitsList"></ul>
+</section>
+
+<footer>
+  <p><b>fallfloor enterprise</b> — a reference design by AI-Native Solutions. MIT. Powered by the Konomi architecture, created by Thomas Frumkin.</p>
+  <p>Go/no-go method: Gary W. Floyd, Lumiea Systems Research Division — ThunderStruck Service LLC — "From GEP Stabilization to Dual-Map Ethical Reasoning," Derivation v0.2. Evidence: <a href="https://sjgant80-hub.github.io/fallfloor/">fallfloor</a> (public datasets: Banking77, SMS Spam Collection, CLINC150). <a href="https://github.com/sjgant80-hub/fallfloor-enterprise">Source</a> · <a href="llms.txt">llms.txt</a></p>
+</footer>
+</div>
+
+<!-- ⟦DATA-BEGIN⟧ generated by tools/make-page.mjs — do not edit here -->
+<script type="application/json" id="floorData">{"company":{"_rule":"A MODELLED company, not a client. Every number in this file is an assumption, labelled as one, and every one can be changed on the page. Measured figures come from evidence/fallfloor.json; prices from sources/prices.json.","name":"A modelled UK digital bank with EU customers","profile":{"employees":1200,"knowledgeWorkers":1000,"laptops":1000,"customers":"about 1.2 million","footprint":"Head office in the UK; customers in the UK and the EU — so UK GDPR, EU GDPR (Art 3(2)) and, where AI output is used in the EU, the EU AI Act (Art 2(1)(c)) all apply.","basis":"assumption"},"years":5,"growth":{"value":0.15,"basis":"assumption","why":"Volume growth per year for the automated workloads; seats are held flat."},"floor":{"nodeShare":{"value":0.25,"basis":"assumption","why":"A quarter of laptops enrolled as AI nodes — on mains power, managed by device policy."},"hoursPerDay":{"value":6,"basis":"assumption","why":"Node hours per working day while the laptop is on and plugged in."},"daysPerMonth":{"value":21,"basis":"assumption","why":"Working days per month."}},"core":{"model":{"name":"Qwen2.5-32B-Instruct (Apache 2.0), 4-bit","weightsGB":18,"basis":"estimate","why":"32.8B parameters (Hugging Face model card) at 4-bit plus overhead ≈ 18 GB.","source":"https://huggingface.co/Qwen/Qwen2.5-32B-Instruct"},"efficiency":{"value":0.35,"basis":"assumption","why":"Share of the memory-bandwidth ceiling reached when generating (decode is bandwidth-bound: tokens/s ≤ bandwidth ÷ weight size). The laptop in the fallfloor run reached less; Phase 1 measures the real figure on the chosen node before more are bought."},"prefillTokPerSec":{"value":300,"basis":"assumption","why":"Planning figure for reading the prompt on the core node; Phase 1 measures it."},"hoursPerMonth":{"value":500,"basis":"assumption","why":"Core nodes serve office hours plus overnight batch work (about 16 h a day)."},"targetUtil":{"value":0.6,"basis":"assumption","why":"Headroom for peaks; queued work absorbs the rest."},"spare":{"value":1,"basis":"assumption","why":"One spare node (N+1)."},"lifeYears":{"value":4,"basis":"assumption","why":"Replace core nodes every four years."}},"workloads":[{"id":"support-triage","name":"Customer support: route, topic and a first draft for the agent","tier":"laptop","perMonth":150000,"tokens":"measured","evidence":"support","cloud":"api","flags":{"personalData":true,"interactsWithPublic":false,"significantDecision":false,"highRisk":false,"euOutput":true},"mode":"assisted","why":"Measured in fallfloor: route → topic → draft on the laptop floor."},{"id":"inbound-screening","name":"Inbound message screening: flag suspected spam and scams for review","tier":"laptop","perMonth":400000,"tokens":"measured","evidence":"security","cloud":"api","flags":{"personalData":true,"interactsWithPublic":false,"significantDecision":false,"highRisk":false,"euOutput":true},"mode":"assisted","why":"Measured in fallfloor (SMS screening)."},{"id":"hr-routing","name":"Staff HR helpdesk: route each question to the right HR topic","tier":"laptop","perMonth":8000,"tokens":"measured","evidence":"hr","cloud":"api","flags":{"personalData":true,"interactsWithPublic":false,"significantDecision":false,"highRisk":false,"euOutput":true},"mode":"automated","why":"Measured in fallfloor (CLINC150 work topics). Routing a question is a narrow procedural task, not an employment decision (AI Act Art 6(3)(a))."},{"id":"support-replies","name":"Customer replies at production quality, drafted on the core tier for agent approval","tier":"core","perMonth":150000,"tokens":"estimate","tokensIn":1400,"tokensOut":150,"cloud":"api","flags":{"personalData":true,"interactsWithPublic":false,"significantDecision":false,"highRisk":false,"euOutput":true},"mode":"assisted","why":"Tokens: the measured fallfloor support prompt (831 in / 73 out) plus the retrieved help-article text and a longer reply — an estimate."},{"id":"knowledge-assistant","name":"Internal knowledge assistant for staff (answers from the bank's own documents)","tier":"core","perMonth":210000,"tokens":"estimate","tokensIn":2500,"tokensOut":300,"cloud":"seats","flags":{"personalData":true,"interactsWithPublic":false,"significantDecision":false,"highRisk":false,"euOutput":true},"mode":"assisted","why":"1,000 knowledge workers × 10 questions a working day × 21 days. On the corporate side this is what the seats buy. Tokens are an estimate (retrieved passages in, a short answer out)."},{"id":"kyc-extraction","name":"KYC document field extraction, checked by an analyst","tier":"core","perMonth":30000,"tokens":"estimate","tokensIn":1500,"tokensOut":150,"cloud":"api","flags":{"personalData":true,"interactsWithPublic":false,"significantDecision":false,"highRisk":false,"euOutput":true},"mode":"assisted","why":"Reading identity and address documents into structured fields. Not biometric identification; an analyst confirms every record. Tokens are an estimate."}],"outOfScope":[{"id":"credit-decisions","name":"Credit decisions","why":"High-risk under AI Act Annex III 5(b) from 2 December 2027, a fundamental rights impact assessment (Art 27) and GDPR Art 22 / UK Arts 22A–22D. Not in this rollout; the gate shows why."}],"staff":{"onCost":{"value":1.3,"basis":"estimate","why":"Employer's National Insurance, pension and overheads on top of salary — an estimate; change it."},"local":[{"role":"AI platform lead","soc":"2133","fte":1},{"role":"Inference and ML engineers","soc":"2134","fte":2},{"role":"Infrastructure / SRE for the core nodes and the floor","soc":"2132","fte":1},{"role":"Security (model supply chain, device policy)","soc":"2135","fte":0.5},{"role":"Data protection and AI governance (with the DPO)","soc":"2133","fte":0.5}],"cloud":[{"role":"AI platform and integration engineers","soc":"2134","fte":2},{"role":"Vendor management and procurement","soc":"2132","fte":0.5},{"role":"Data protection and AI governance (with the DPO)","soc":"2133","fte":0.5}],"basis":"assumption","why":"Team sizes are this design's assumptions. Salaries are ONS medians (sources/prices.json)."},"compliance":{"dayRate":{"value":800,"basis":"assumption","why":"Blended cost of a day of legal / privacy specialist time — an assumption; change it."},"local":{"daysYear1":40,"daysPerYear":15,"why":"DPIAs per workload, AI system register, AI literacy plan, Article 50 notices, supply-chain and device security reviews."},"cloud":{"daysYear1":50,"daysPerYear":25,"why":"The same, plus processor due diligence and contracts for each AI vendor, transfer risk assessments, and yearly vendor reviews."},"basis":"assumption"},"policy":{"_what":"The go/no-go thresholds this design proposes to the CTO. They are choices, not facts, and the page lets you change them.","maxSilentErrorRate":0.02,"maxAutoFalseFlagRate":0.02,"maxReviewFalseFlagRate":0.3,"minPositiveSamples":30,"minItems":100,"routingMaxErrorRate":0.3,"asyncP95Sec":300,"ownerAssigned":true,"unmeasuredAgentCatch":0.7},"choices":{"seat":"m365-copilot","seatShare":1,"apiModel":"gpt-5-mini","providerAbroad":true}},"prices":{"_rule":"Every figure is a public list price with its source and the date it was checked, a published specification, or an official statistic. VAT treatment is recorded as the page states it; the model compares everything net of UK VAT (a VAT-registered company reclaims it).","checked":"2026-09-29","vatRate":{"value":0.2,"why":"UK standard rate of VAT","source":"https://www.gov.uk/vat-rates","checked":"2026-09-29"},"fx":{"gbpPerUsd":0.75396,"how":"ECB euro reference rates for 2026-09-28: USD 1.1378 and GBP 0.85785 per euro, so GBP per USD = 0.85785 / 1.1378","source":"https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml","checked":"2026-09-29"},"seats":[{"id":"m365-copilot","product":"Microsoft 365 Copilot (enterprise)","price":23.1,"currency":"GBP","per":"user / month, paid yearly, annual commitment","vat":"excluded","quote":"£23.10 user/month, paid yearly … Price does not include VAT.","addOn":"Added to an existing Microsoft 365 licence, which both sides of this comparison keep.","maxSeats":null,"source":"https://www.microsoft.com/en-gb/microsoft-365-copilot/enterprise","checked":"2026-09-29"},{"id":"chatgpt-business","product":"ChatGPT Business (standard seat)","price":15,"currency":"GBP","per":"seat / month, billed annually","vat":"not stated","quote":"Standard seat £15 / month … £15/month if billed annually.","addOn":null,"maxSeats":null,"source":"https://chatgpt.com/pricing/","checked":"2026-09-29"},{"id":"claude-enterprise","product":"Claude Enterprise","price":20,"currency":"USD","per":"seat / month, billed annually, plus usage at API rates","vat":"not stated","quote":"Seat price + usage at API rates US$20/seat/month, billed annually.","addOn":null,"plusUsage":true,"maxSeats":null,"source":"https://claude.com/pricing","checked":"2026-09-29"},{"id":"claude-team","product":"Claude Team (standard seat)","price":18,"currency":"GBP","per":"seat / month, billed annually","vat":"included","quote":"For teams of 2 to 150 … £18 Per seat / month if billed annually … Prices include 20% VAT","addOn":null,"maxSeats":150,"source":"https://claude.com/pricing","checked":"2026-09-29"}],"api":[{"id":"gpt-5-nano","provider":"OpenAI","model":"gpt-5-nano","inPerM":0.05,"outPerM":0.4,"currency":"USD","source":"https://developers.openai.com/api/docs/pricing","checked":"2026-09-29"},{"id":"gpt-5-mini","provider":"OpenAI","model":"gpt-5-mini","inPerM":0.25,"outPerM":2,"currency":"USD","source":"https://developers.openai.com/api/docs/pricing","checked":"2026-09-29"},{"id":"gemini-3.1-flash-lite","provider":"Google","model":"Gemini 3.1 Flash-Lite","inPerM":0.25,"outPerM":1.5,"currency":"USD","source":"https://ai.google.dev/gemini-api/docs/pricing","checked":"2026-09-29"},{"id":"claude-haiku-4.5","provider":"Anthropic","model":"Claude Haiku 4.5","inPerM":1,"outPerM":5,"currency":"USD","source":"https://platform.claude.com/docs/en/about-claude/pricing","checked":"2026-09-29"},{"id":"claude-sonnet-5","provider":"Anthropic","model":"Claude Sonnet 5","inPerM":2,"outPerM":10,"currency":"USD","source":"https://platform.claude.com/docs/en/about-claude/pricing","checked":"2026-09-29"}],"coreNode":{"id":"mac-studio-m5-ultra","product":"Apple Mac Studio, M5 Ultra (base: 96GB unified memory, 1.2TB/s memory bandwidth)","price":5499,"currency":"GBP","vat":"included","quote":"M5 Ultra chip … From £5,499","bandwidthGBs":1200,"memoryGB":96,"maxWatts":480,"specQuote":"96GB unified memory … 1.2TB/s memory bandwidth … Maximum continuous power: 480W","source":"https://www.apple.com/uk/shop/buy-mac/mac-studio","specSource":"https://www.apple.com/uk/mac-studio/specs/","checked":"2026-09-29","why":"A reference core node: any server with similar memory and memory bandwidth serves the same role. Chosen because its price and power figures are published."},"electricity":{"pencePerKwh":24.51,"what":"UK non-domestic electricity, average price including Climate Change Levy, quarter 2 2026","quote":"In quarter 2 2026, the average electricity price including CCL was 24.51 pence per kWh","source":"https://assets.publishing.service.gov.uk/media/6aba2810fe72ed1e2b02f0e7/Quarterly_Energy_Prices_September_2026.pdf","publisher":"DESNZ, Quarterly Energy Prices, September 2026 (published 29 September 2026)","checked":"2026-09-29"},"laptopPower":{"wattsLow":15,"wattsHigh":55,"chip":"Intel Core i7-1255U","how":"The chip's published Processor Base Power (15 W) to Maximum Turbo Power (55 W). The model uses 55 W for every laptop-hour of AI work — an upper bound.","source":"https://www.intel.com/content/www/us/en/products/sku/226259/intel-core-i71255u-processor-12m-cache-up-to-4-70-ghz/specifications.html","checked":"2026-09-29"},"salaries":{"what":"ONS, Annual Survey of Hours and Earnings 2025 (provisional), Table 14.7a, median gross annual pay, full-time employee jobs, United Kingdom","source":"https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/occupation4digitsoc2010ashetable14","checked":"2026-09-29","roles":{"2132":{"title":"IT managers","median":56438},"2133":{"title":"IT business analysts, architects and systems designers","median":60288},"2134":{"title":"Programmers and software development professionals","median":56914},"2135":{"title":"Cyber security professionals","median":54647}},"note":"UK medians, not London rates and not market rates for specialist AI engineers — the page lets you change them."}},"law":{"_rule":"Verified law only: every entry quotes the primary text (or the regulator's own words), links it, and gives the date it was checked. Status says what each deployment does to the duty: removed (that layer is gone), eased (smaller), yours (entirely in-house), shared (with the vendor), unchanged (same duty on any stack).","checked":"2026-09-29","instruments":{"aia":{"name":"EU AI Act — Regulation (EU) 2024/1689, as amended by Regulation (EU) 2026/1744 (Digital Omnibus on AI, OJ 24.7.2026, in force 27 July 2026)","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689","amendUrl":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744"},"gdpr":{"name":"EU GDPR — Regulation (EU) 2016/679","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679"},"ukgdpr":{"name":"UK GDPR, as amended by the Data (Use and Access) Act 2025 (data protection provisions in force 5 February 2026: SI 2026/82, regulation 2)","url":"https://www.legislation.gov.uk/eur/2016/679/contents","commencement":"https://www.legislation.gov.uk/uksi/2026/82/regulation/2"}},"dates":[{"date":"2025-02-02","what":"AI Act Chapters I and II apply — including Article 4 (AI literacy) and the Article 5 prohibitions","ref":"Art 113, third para, point (a)","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744"},{"date":"2026-02-05","what":"UK: Data (Use and Access) Act 2025 data protection provisions in force — including section 80 (new Articles 22A–22D on automated decision-making) and section 85 / Schedule 7 (international transfers)","ref":"SI 2026/82, reg 2(j), (m), (z9)","url":"https://www.legislation.gov.uk/uksi/2026/82/regulation/2"},{"date":"2026-07-27","what":"Digital Omnibus on AI (Regulation (EU) 2026/1744) in force","ref":"Reg 2026/1744, Art 4","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744"},{"date":"2026-08-02","what":"AI Act general date of application — including Article 50 transparency","ref":"Art 113, second para","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689"},{"date":"2027-12-02","what":"AI Act high-risk obligations (Chapter III, Sections 1–3) for Annex III systems — moved from 2 August 2026 by the Digital Omnibus","ref":"Art 113, third para, point (c)(i), as replaced by Reg 2026/1744","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744"},{"date":"2028-08-02","what":"AI Act high-risk obligations for Annex I (product-safety) systems","ref":"Art 113, third para, point (c)(ii), as replaced by Reg 2026/1744","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744"}],"duties":[{"id":"aia-scope","regime":"EU AI Act","ref":"Art 2(1)(c)","title":"A UK company is in scope when its AI output is used in the EU","quote":"providers and deployers of AI systems that have their place of establishment or are located in a third country, where the output produced by the AI system is used in the Union","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689","checked":"2026-09-29","from":"2024-08-01","appliesIf":"euOutput","status":{"local":"unchanged","cloud":"unchanged","saas":"unchanged"},"note":{"local":"Where the model runs does not change scope; who uses the output does.","cloud":"Same.","saas":"Same."}},{"id":"aia-provider","regime":"EU AI Act","ref":"Art 3(3) and 3(11)","title":"Building an AI system for your own use makes you its provider","quote":"‘putting into service’ means the supply of an AI system for first use directly to the deployer or for own use in the Union for its intended purpose","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689","checked":"2026-09-29","from":"2024-08-01","appliesIf":"always","status":{"local":"yours","cloud":"yours","saas":"shared"},"note":{"local":"Local-first in-house systems: the company is provider and deployer. Plan for provider duties (for this design: Article 50 and AI literacy; full high-risk duties only if a high-risk use is added).","cloud":"An AI system the company builds on a cloud model API is still the company's system: provider and deployer.","saas":"A seat product (Copilot, ChatGPT, Claude): the vendor is the provider of its assistant; the company is the deployer."}},{"id":"aia-4","regime":"EU AI Act","ref":"Art 4 (as replaced by Reg 2026/1744)","title":"AI literacy","quote":"Providers and deployers of AI systems shall take measures to support the development of AI literacy of their staff and other persons dealing with the operation and use of AI systems on their behalf","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744","checked":"2026-09-29","from":"2025-02-02","appliesIf":"always","status":{"local":"unchanged","cloud":"unchanged","saas":"unchanged"},"note":{"local":"Training plan in the operating model (Phase 0).","cloud":"Same duty.","saas":"Same duty."}},{"id":"aia-50","regime":"EU AI Act","ref":"Art 50(1)","title":"Tell people when they are talking to an AI","quote":"Providers shall ensure that AI systems intended to interact directly with natural persons are designed and developed in such a way that the natural persons concerned are informed that they are interacting with an AI system","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689","checked":"2026-09-29","from":"2026-08-02","appliesIf":"interactsWithPublic","status":{"local":"yours","cloud":"yours","saas":"shared"},"note":{"local":"In force now. Applies to a customer-facing assistant; drafts that an agent sends as their own do not interact directly.","cloud":"Same — a support bot built on an API is the company's system.","saas":"The vendor designs its own assistant's disclosure."}},{"id":"aia-highrisk","regime":"EU AI Act","ref":"Art 6(2), Annex III; Art 6(3) derogation; Art 113(c)(i)","title":"High-risk uses (e.g. creditworthiness, employment decisions) — from 2 December 2027","quote":"(b) AI systems intended to be used to evaluate the creditworthiness of natural persons or establish their credit score, with the exception of AI systems used for the purpose of detecting financial fraud","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689","checked":"2026-09-29","from":"2027-12-02","appliesIf":"highRisk","status":{"local":"unchanged","cloud":"unchanged","saas":"unchanged"},"note":{"local":"Full provider duties (risk management, data governance, logging, human oversight, conformity) — the design keeps high-risk uses out of the first rollout.","cloud":"Same duties; a cloud model does not carry them for you.","saas":"Same for any high-risk use of the tool."}},{"id":"aia-26","regime":"EU AI Act","ref":"Art 26(2), 26(5), 26(6)","title":"Deployer duties for high-risk systems: human oversight, monitoring, logs kept at least six months","quote":"Deployers shall assign human oversight to natural persons who have the necessary competence, training and authority … keep the logs automatically generated by that high-risk AI system … of at least six months","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689","checked":"2026-09-29","from":"2027-12-02","appliesIf":"highRisk","status":{"local":"eased","cloud":"unchanged","saas":"unchanged"},"note":{"local":"The signed hop ledger is the log, under the company's control. Financial institutions meet the monitoring and log duties through their financial-services governance (Art 26(5), (6)).","cloud":"Logs split between the company and the vendor.","saas":"Logs largely the vendor's."}},{"id":"aia-27","regime":"EU AI Act","ref":"Art 27(1)","title":"Fundamental rights impact assessment before deploying credit scoring","quote":"deployers of high-risk AI systems referred to in points 5 (b) and (c) of Annex III, shall perform an assessment of the impact on fundamental rights","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689","checked":"2026-09-29","from":"2027-12-02","appliesIf":"creditScoring","status":{"local":"unchanged","cloud":"unchanged","saas":"unchanged"},"note":{"local":"Only if credit scoring is ever added.","cloud":"Same.","saas":"Same."}},{"id":"aia-99","regime":"EU AI Act","ref":"Art 99(3), 99(4)","title":"Fines","quote":"up to EUR 15 000 000 or, if the offender is an undertaking, up to 3 % of its total worldwide annual turnover for the preceding financial year, whichever is higher","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689","checked":"2026-09-29","from":"2025-08-02","appliesIf":"euOutput","status":{"local":"unchanged","cloud":"unchanged","saas":"unchanged"},"note":{"local":"Up to EUR 35 000 000 or 7 % for prohibited practices (Art 99(3)).","cloud":"Same.","saas":"Same."}},{"id":"gdpr-5","regime":"GDPR / UK GDPR","ref":"Art 5(1)(d), 5(2)","title":"Accuracy, and being able to prove compliance","quote":"accurate and, where necessary, kept up to date … The controller shall be responsible for, and be able to demonstrate compliance with, paragraph 1 (‘accountability’)","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679","checked":"2026-09-29","from":"2018-05-25","appliesIf":"personalData","status":{"local":"eased","cloud":"unchanged","saas":"unchanged"},"note":{"local":"Accuracy is yours on every stack (the measured small models were not accurate enough to answer alone). Accountability is easier: every answer has a signed receipt the company holds.","cloud":"Evidence of what the model did sits partly with the vendor.","saas":"Evidence sits mostly with the vendor."}},{"id":"gdpr-6","regime":"GDPR / UK GDPR","ref":"Art 6(1)","title":"A lawful basis for each use","quote":"Processing shall be lawful only if and to the extent that at least one of the following applies","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679","checked":"2026-09-29","from":"2018-05-25","appliesIf":"personalData","status":{"local":"unchanged","cloud":"unchanged","saas":"unchanged"},"note":{"local":"Where the model runs does not supply a lawful basis.","cloud":"Same.","saas":"Same."}},{"id":"gdpr-22","regime":"GDPR / UK GDPR","ref":"EU Art 22(1); UK Arts 22A–22D (DUAA 2025 s.80, in force 5 Feb 2026)","title":"Decisions based solely on automated processing","quote":"EU: “the right not to be subject to a decision based solely on automated processing … which produces legal effects … or similarly significantly affects him or her”. UK: safeguards must “enable the data subject to obtain human intervention … [and] to contest such decisions” (Art 22C(2))","url":"https://www.legislation.gov.uk/eur/2016/679/article/22C","checked":"2026-09-29","from":"2026-02-05","appliesIf":"significantDecision","status":{"local":"unchanged","cloud":"unchanged","saas":"unchanged"},"note":{"local":"The design keeps a person meaningfully in every significant decision.","cloud":"Same.","saas":"Same."}},{"id":"gdpr-25","regime":"GDPR / UK GDPR","ref":"Art 25(1)","title":"Data protection by design and by default","quote":"the controller shall, both at the time of the determination of the means for processing and at the time of the processing itself, implement appropriate technical and organisational measures","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679","checked":"2026-09-29","from":"2018-05-25","appliesIf":"personalData","status":{"local":"eased","cloud":"unchanged","saas":"unchanged"},"note":{"local":"The strongest minimisation there is: the prompt and the answer never leave the company's machines.","cloud":"Minimise what is sent; rely on the vendor's retention terms.","saas":"Rely on the vendor's settings and terms."}},{"id":"gdpr-28","regime":"GDPR / UK GDPR","ref":"Art 28(1)","title":"Processor contracts and due diligence","quote":"Where processing is to be carried out on behalf of a controller, the controller shall use only processors providing sufficient guarantees","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679","checked":"2026-09-29","from":"2018-05-25","appliesIf":"personalData","status":{"local":"removed","cloud":"shared","saas":"shared"},"note":{"local":"No third party processes the prompts or answers, so there is no AI processor to contract, audit or monitor for inference.","cloud":"The model vendor is a processor: contract, due diligence, sub-processor list, ongoing review.","saas":"The seat vendor is a processor: the same work."}},{"id":"gdpr-32","regime":"GDPR / UK GDPR","ref":"Art 32(1)","title":"Security of processing","quote":"the controller and the processor shall implement appropriate technical and organisational measures to ensure a level of security appropriate to the risk","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679","checked":"2026-09-29","from":"2018-05-25","appliesIf":"personalData","status":{"local":"yours","cloud":"shared","saas":"shared"},"note":{"local":"All of it is in-house: encrypted laptops, hardened core nodes, access control, the model supply chain (hash-pinned weights).","cloud":"Split with the vendor under its terms.","saas":"Split with the vendor under its terms."}},{"id":"gdpr-35","regime":"GDPR / UK GDPR","ref":"Art 35(1); ICO list of high-risk processing","title":"Data protection impact assessment","quote":"ICO: “Innovative technology: processing involving the use of innovative technologies, or the novel application of existing technologies (including AI). A DPIA is required where this processing is combined with any of the criteria from the European guidelines.”","url":"https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/when-do-we-need-to-do-a-dpia/","checked":"2026-09-29","from":"2018-05-25","appliesIf":"personalData","status":{"local":"unchanged","cloud":"unchanged","saas":"unchanged"},"note":{"local":"Plan a DPIA per workload in Phase 0; the local design removes the transfer and processor risks from it.","cloud":"Same, plus transfer and processor risks.","saas":"Same, plus transfer and processor risks."}},{"id":"gdpr-44","regime":"GDPR / UK GDPR","ref":"EU Art 44; UK Chapter V as amended by DUAA 2025 s.85 and Sch 7 (in force 5 Feb 2026)","title":"Transfers outside the UK / EEA","quote":"Any transfer of personal data which are undergoing processing or are intended for processing after transfer to a third country … shall take place only if … the conditions laid down in this Chapter are complied with","url":"https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679","checked":"2026-09-29","from":"2018-05-25","appliesIf":"providerAbroad","status":{"local":"removed","cloud":"shared","saas":"shared"},"note":{"local":"No personal data leaves the building for inference, so there is no transfer to assess.","cloud":"If the model runs outside the UK/EEA: an adequacy route or safeguards, and a transfer risk assessment.","saas":"Same, unless the vendor contracts UK/EU data residency."}},{"id":"ico-ai","regime":"Guidance","ref":"ICO, Guidance on AI and data protection (updated 15 March 2023; under review after the DUAA)","title":"The UK regulator's AI guidance","quote":"Due to changes made by the Data (Use and Access) Act, this guidance is under review and may be subject to change.","url":"https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/artificial-intelligence/guidance-on-ai-and-data-protection/","checked":"2026-09-29","from":"2023-03-15","appliesIf":"personalData","status":{"local":"unchanged","cloud":"unchanged","saas":"unchanged"},"note":{"local":"Follow it; watch for the post-DUAA revision.","cloud":"Same.","saas":"Same."}},{"id":"edpb-28","regime":"Guidance","ref":"EDPB Opinion 28/2024 (adopted 18 December 2024)","title":"Personal data in AI model development","quote":"Opinion 28/2024 on certain data protection aspects related to the processing of personal data in the context of AI models","url":"https://www.edpb.europa.eu/our-work-tools/our-documents/opinion-board-art-64/opinion-282024-certain-data-protection-aspects_en","checked":"2026-09-29","from":"2024-12-18","appliesIf":"trainsOnPersonalData","status":{"local":"unchanged","cloud":"unchanged","saas":"unchanged"},"note":{"local":"Relevant only if the company fine-tunes models on personal data; this design does not in the first rollout.","cloud":"Same.","saas":"Same."}}]},"evidence":{"kind":"fallfloor-enterprise-evidence","v":1,"from":{"repo":"https://github.com/sjgant80-hub/fallfloor","commit":"e4d3b91303a6a1d68c5dec622581551c3fcaef52","run":"floor-2026-09-29","ledgerHash":"aec73531c3a0ec4099a845038436e38c8bbf64aa370b2bb71453edfc9a17f5c0","hops":898,"page":"https://sjgant80-hub.github.io/fallfloor/","ci":"https://github.com/sjgant80-hub/fallfloor/actions/runs/36598070217","how":"Derived by tools/evidence-from-fallfloor.mjs from the pinned commit's summary and signed ledger, using fallfloor's own kernel (outcomeFromHops, labelBreakdown). fallfloor's CI re-verifies every hop and signature of that ledger."},"machine":"one laptop: Intel Core i7-1255U, Iris Xe graphics, 16 GB — separate Chrome processes as nodes, real WebRTC between them","preregistered":{"rulesPassed":3,"rulesOf":5,"failed":["latency","chain-shape"]},"support":{"items":100,"e2e":0.39,"silent":0.52,"caught":0.09,"replyPass":0.91,"teamAcc":0.69,"intentAcc":0.45,"lostChain":0,"lostPool":0,"p95Sec":62,"tokensIn":830.62,"tokensOut":73.01,"laptopSecondsPerItem":18.063,"baselineE2e":0.32},"security":{"items":100,"accuracy":0.82,"caught":8,"missed":0,"wronglyFlagged":18,"correctlyPassed":74,"majorityAccuracy":0.92,"tokensIn":359.77,"tokensOut":6,"laptopSecondsPerItem":4.583},"hr":{"items":100,"accuracy":0.85,"tokensIn":370.39,"tokensOut":8.56,"laptopSecondsPerItem":4.966},"coldStartSecMax":234.4,"latencyRule":{"pass":false,"value":61.962},"unplannedRestarts":0,"finished":"2026-09-29T16:22:09.783Z"},"design":{"_rule":"The design's prose: architecture, operating model, rollout and risks. Numbers are not typed here — the page computes them from the kernel.","case":[{"aspect":"Where prompts and answers go","local":"Nowhere: they stay on the company's laptops and core nodes.","corporate":"To the vendor's cloud, under its terms and retention settings."},{"aspect":"Who processes the data","local":"Only the company. No AI processor to contract, audit or monitor for inference.","corporate":"The vendor, as processor — contracts, due diligence, sub-processors, yearly review."},{"aspect":"International transfers","local":"None for inference.","corporate":"Yes, if the model runs outside the UK/EEA: an adequacy route or safeguards, and a transfer risk assessment."},{"aspect":"Cost shape","local":"Owned capacity plus the people who run it. Volume growth costs hardware in steps.","corporate":"Seats × people, plus tokens × volume. Growth costs in proportion."},{"aspect":"Evidence of what the AI did","local":"A signed, hash-linked receipt for every step, held by the company.","corporate":"Vendor logs and dashboards, on the vendor's terms."},{"aspect":"The model","local":"Open weights (Apache 2.0), hash-pinned; nobody changes it under you.","corporate":"The vendor's model, updated on the vendor's schedule."},{"aspect":"Quality","local":"Open 32B-class models: good for drafting, extraction and routing; below frontier models on hard reasoning. Measured before every go-live.","corporate":"Frontier models: the strongest general quality available."},{"aspect":"Running it","local":"Yours: nodes, updates, security, on-call.","corporate":"Mostly the vendor's; integration and governance stay yours."},{"aspect":"Leaving","local":"Nothing to leave: the data, the models and the receipts are already yours.","corporate":"Exports, contract terms and re-integration."}],"architecture":[{"layer":"The floor","what":"Staff laptops enrolled as AI nodes: Chrome or Edge running small open models on the laptop's own GPU (WebGPU). Triage, routing and screening. Enrolled by device policy, run only on mains power, disk-encrypted.","evidence":"Measured in fallfloor: seconds per item, cold start, nothing lost when a node died."},{"layer":"The core","what":"A small rack of on-premises inference nodes running a 32B-class open model (Qwen2.5-32B-Instruct, Apache 2.0) for customer reply drafts, the staff knowledge assistant and KYC extraction. N + 1 for resilience.","evidence":"Throughput is a planning figure until Phase 1 measures it on the chosen node."},{"layer":"The mesh and the desk","what":"Peer-to-peer WebRTC data channels inside the LAN; a desk dispatches work, keeps queues and reassigns work from a node that has gone. At-least-once delivery with de-duplication.","evidence":"fallfloor: 0 of 100 items lost in both kill tests."},{"layer":"Receipts","what":"Every step is signed by the node that did it (Ed25519) and hash-linked to the step before; the ledger is replicated to two core nodes and kept for the retention period.","evidence":"fallfloor: 898 hops, every signature re-verified in CI."},{"layer":"Gates","what":"Deterministic gates on every output (the reply gate: right article, no invented numbers, links or emails) and a dual-map go/no-go gate on every deployment decision.","evidence":"The board below, sealed from fallfloor's evidence."},{"layer":"Knowledge","what":"A retrieval index over the bank's own documents (policies, help articles, procedures), built and stored on the core nodes.","evidence":"Design element; built in Phase 2."},{"layer":"Identity and control","what":"The existing identity provider (single sign-on), role-based access to each AI system, a register of AI systems with a named owner each, and change control for model updates.","evidence":"Design element; set up in Phase 0."},{"layer":"Integration","what":"Connectors to the ticketing system, the email gateway and the HR system, running inside the network.","evidence":"Design element."},{"layer":"People in the loop","what":"Agents approve customer replies; analysts confirm KYC records; the HR team answers the questions the router sends them.","evidence":"The board decides where a person must stay in the loop."},{"layer":"The one door out","what":"Outbound traffic for AI is limited to fetching model weights (no personal data) into a hash-pinned internal mirror. Closed by default.","evidence":"Design element."}],"operating":["A named owner for every AI system, in a register the DPO can read (Phase 0).","AI literacy for everyone who operates or relies on an AI system — the AI Act Article 4 duty — with role-specific training for agents, analysts and the platform team.","A DPIA per workload before it touches personal data; the local design removes the transfer and processor sections from them.","Quarterly re-gating: every deployment decision is re-run on fresh measured evidence; a BLOCK stops it, a PENDING names what must be measured.","Change control for models: a new model or prompt goes through the same pre-registered test before it replaces the old one."],"rollout":[{"phase":"Phase 0 — Decide and govern","months":"Month 1","do":"AI system register with owners; lawful basis and DPIA screening per workload; AI Act role map (provider and deployer for in-house systems); AI literacy plan; Article 50 notice wording; pre-register the Phase 1 thresholds.","gate":"The CTO signs the register, the thresholds and the budget for one core node."},{"phase":"Phase 1 — Pilot on your own data","months":"Months 2–3","do":"One core node and twenty enrolled laptops; the fallfloor method on the bank's own (pseudonymised) tickets, messages and documents; measure core-node throughput, agent catch rate and quality per workload.","gate":"Every decision re-run on the pilot's evidence. PASS goes to Phase 2; PENDING names the measurement still missing; BLOCK stays out."},{"phase":"Phase 2 — Assisted production","months":"Months 4–6","do":"Workloads that passed go live with a person in the loop: HR routing, reply drafts for agents, KYC extraction with analyst confirmation. Knowledge index built. Core nodes bought to the measured capacity.","gate":"Monthly quality sampling against the pre-registered thresholds; incidents and data-subject requests handled through the normal processes."},{"phase":"Phase 3 — Scale","months":"Months 7–12","do":"The staff knowledge assistant to all knowledge workers; the floor to its enrolled laptops; seat licences not renewed where the local assistant measured good enough.","gate":"Seat renewals are a CTO decision on measured usage and quality, not a default."},{"phase":"Phase 4 — Run and re-gate","months":"Year 2 onwards","do":"Quarterly re-gating, model upgrades through change control, capacity added in steps. High-risk uses (such as credit decisions) only through the AI Act high-risk regime, which applies from 2 December 2027.","gate":"Each quarter's board is sealed and kept with the audit record."}],"limits":["A modelled company: the volumes, team sizes, compliance days and day rate are assumptions, labelled and changeable on this page.","The measured evidence comes from one laptop in fallfloor, on public datasets. The bank's own data will score differently — that is what Phase 1 measures.","Core-node throughput is a planning figure from the node's published memory bandwidth, not a measurement.","The corporate side prices the same work, not the same quality: frontier models would very likely answer more of it correctly.","Staff are the largest line on both sides and rest on assumptions about team size; the cost section shows how much of each total rests on estimates.","The compliance map quotes the law and says what each stack does to each duty. It is a map for the CTO and DPO; counsel signs off the final position."]},"risks":[{"risk":"The small models on the laptops answer wrongly and nobody notices (fallfloor measured 52% silently wrong on support).","likelihood":"high","impact":"high","mitigation":"Customer-facing output stays assisted: an agent approves every reply, and the go/no-go board blocks unsupervised sending until measured evidence clears the policy threshold.","owner":"AI platform lead, with the head of customer operations"},{"risk":"Spam screening over-flags legitimate messages (fallfloor: 18 of 92 wrongly flagged).","likelihood":"high","impact":"medium","mitigation":"No automatic quarantine; flags go to a person, and Phase 1 re-measures on the bank's own messages with enough spam items to trust the catch rate.","owner":"Head of security operations"},{"risk":"A laptop's GPU faults mid-run (seen during fallfloor's development on an Intel Iris Xe with a 2023 driver).","likelihood":"medium","impact":"low","mitigation":"Work queues persist on the node; a faulted node is restarted and resumes; the desk moves work off a dead node; driver updates go through device policy.","owner":"Infrastructure / SRE"},{"risk":"Core-node throughput is below the planning figure, so capacity is short.","likelihood":"medium","impact":"medium","mitigation":"Buy one node, measure in Phase 1, then buy the rest to the measured figure; work is queued, not dropped, when capacity is tight.","owner":"AI platform lead"},{"risk":"A laptop or core node is lost or stolen with queued work on it.","likelihood":"medium","impact":"high","mitigation":"Full-disk encryption and device policy on every enrolled laptop; core nodes in a locked room; queues hold only the work in flight and are cleared on completion.","owner":"Security"},{"risk":"Tampered or wrong model weights reach the nodes.","likelihood":"low","impact":"high","mitigation":"Weights enter only through the one outbound door into a hash-pinned internal mirror; nodes refuse a model whose hash is not on the approved list.","owner":"Security"},{"risk":"A model's licence does not allow commercial use (fallfloor's 3B comparison model is research-licensed).","likelihood":"low","impact":"medium","mitigation":"Only Apache 2.0 or equivalent licences in production; the licence is recorded in the AI system register before a model is approved.","owner":"Data protection and AI governance"},{"risk":"The law moves again (the Digital Omnibus already moved the AI Act's high-risk dates; UK Articles 22A–22D are new).","likelihood":"medium","impact":"medium","mitigation":"Quarterly legal check of the compliance map against the primary texts; the design keeps high-risk uses out of the rollout.","owner":"DPO"},{"risk":"The team cannot run it: inference, security and on-call are in-house skills.","likelihood":"medium","impact":"high","mitigation":"Budgeted team of five from day one, runbooks from the pilot, and the corporate model kept as a fallback for any workload that fails its gate.","owner":"CTO"}]}</script>
+<!-- ⟦DATA-END⟧ -->
+
+<script type="module">
+// ⟦KERNEL-BEGIN⟧ generated from hash.mjs, dualmap.mjs and kernel.mjs by make-page.mjs — do not edit here
+// ── hash.mjs (own scope) ──
+const { sha256, canon } = (() => {
+// dual-map · hash.mjs — the estate's own proven sha256 + canonical-JSON, vendored VERBATIM from
+// fallbrain/cascade.mjs (the same primitive every receipt in this estate already seals with) rather
+// than re-derived. Reusing the proven one is the honest move (check-the-estate-first): the dual-map
+// receipt is then tamper-evident exactly the way store.mjs's memory envelope is. Pure, zero-dep,
+// byte-identical in node and every evergreen browser (TextEncoder / DataView are W3C standard).
+//
+// The DECISION LAW lives in dualmap.mjs; this is only the content-hash under its receipt.
+
+const isStr = (v) => typeof v === 'string';
+
+const K256 = new Uint32Array([
+  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+  0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+  0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+  0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+  0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+]);
+
+function sha256(text) {
+  if (!isStr(text)) return { ok: false, why: 'sha256 takes a string' };
+  const data = new TextEncoder().encode(text);
+  const len = data.length;
+  const padded = new Uint8Array((((len + 8) >> 6) << 6) + 64);
+  padded.set(data);
+  padded[len] = 0x80;
+  const dv = new DataView(padded.buffer);
+  const bitLen = len * 8;
+  dv.setUint32(padded.length - 8, Math.floor(bitLen / 4294967296));
+  dv.setUint32(padded.length - 4, bitLen >>> 0);
+  let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a;
+  let h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+  const w = new Uint32Array(64);
+  for (let i = 0; i < padded.length; i += 64) {
+    for (let t = 0; t < 16; t++) w[t] = dv.getUint32(i + t * 4);
+    for (let t = 16; t < 64; t++) {
+      const x = w[t - 15], y = w[t - 2];
+      const s0 = (((x >>> 7) | (x << 25)) ^ ((x >>> 18) | (x << 14)) ^ (x >>> 3)) >>> 0;
+      const s1 = (((y >>> 17) | (y << 15)) ^ ((y >>> 19) | (y << 13)) ^ (y >>> 10)) >>> 0;
+      w[t] = (w[t - 16] + s0 + w[t - 7] + s1) >>> 0;
+    }
+    let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, hh = h7;
+    for (let t = 0; t < 64; t++) {
+      const S1 = (((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7))) >>> 0;
+      const ch = ((e & f) ^ (~e & g)) >>> 0;
+      const t1 = (hh + S1 + ch + K256[t] + w[t]) >>> 0;
+      const S0 = (((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10))) >>> 0;
+      const maj = ((a & b) ^ (a & c) ^ (b & c)) >>> 0;
+      const t2 = (S0 + maj) >>> 0;
+      hh = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+    }
+    h0 = (h0 + a) >>> 0; h1 = (h1 + b) >>> 0; h2 = (h2 + c) >>> 0; h3 = (h3 + d) >>> 0;
+    h4 = (h4 + e) >>> 0; h5 = (h5 + f) >>> 0; h6 = (h6 + g) >>> 0; h7 = (h7 + hh) >>> 0;
+  }
+  const hex = (n) => n.toString(16).padStart(8, '0');
+  return { ok: true, hash: hex(h0) + hex(h1) + hex(h2) + hex(h3) + hex(h4) + hex(h5) + hex(h6) + hex(h7) };
+}
+
+function canon(v) {
+  if (v === null || typeof v === 'number' || typeof v === 'boolean') return JSON.stringify(v);
+  if (typeof v === 'string') return JSON.stringify(v);
+  if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  if (typeof v === 'object') return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+  return '"?"';
+}
+return { sha256, canon };
+})();
+
+// ── dualmap.mjs (own scope) ──
+const { decide, seal, verifyReceipt } = (() => {
+// dual-map · dualmap.mjs — a decision gate with TWO maps that cannot average each other away.
+//
+// WHAT IT IS, in the estate's own words: witness = E⁺ (the positive map — what evidence SUPPORTS
+// this action), adversary = E⁻ (the negative map — the evidence-supported conditions under which it
+// FAILS). The estate's `witness` attacks CODE (flip an operator, demand the test catch it); this
+// attacks a DECISION (assume the trusted reference is wrong, demand the verdict survive). One severe,
+// well-supported failure BLOCKS — a high positive score can never buy it back. That non-compensating
+// veto is the whole point.
+//
+// ⚑⚑ CREDIT: this kernel is a faithful implementation of the derivation in
+//   Gary W. Floyd, Lumiea Systems Research Division — ThunderStruck Service LLC — "From GEP Stabilization to
+//   Dual-Map Ethical Reasoning," Derivation v0.2 (2026).
+// Vendored verbatim from sjgant80-hub/dual-map @ 3ca840f (2026-09-21); only this credit line was expanded to the
+// full form the estate uses.
+// The positive/negative maps, the non-compensating max aggregator, the TOA hard gate, the
+// law-is-evidence-not-verdict constraint, PASS/BLOCK/PENDING with PENDING first-class, the Tsallis
+// escort weighting at the nominal Ethical baseline q_E,0 = 0.7, and the audit-receipt schema are all
+// Gary's. As he states: 0.7 is a reproducible NOMINAL baseline, NOT a universal moral constant; the
+// weights and thresholds here are explicit defaults, auditable and overridable, never claimed optimal.
+//
+// Pure and total: garbage in -> a structured verdict (never PASS on malformed input) -> never throws.
+// No I/O, no clock (timestamps are passed in by the caller, same discipline as every estate receipt).
+
+
+const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+const isArr = Array.isArray;
+const isStr = (v) => typeof v === 'string' && v.length > 0;
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const clamp01 = (v) => (isNum(v) ? (v < 0 ? 0 : v > 1 ? 1 : v) : 0);
+
+// Gary W. Floyd, Dual-Map v0.2, §2: the NOMINAL Ethical baseline. Explicitly NOT a universal constant.
+const Q_BASELINE = 0.7;
+const P_FLOOR = 1e-9; // §3 zero-collapse guard so p^q stays finite.
+
+// The six negative-evidence components (§12). E⁻ = max of these (§13, non-compensating).
+const NEGATIVE_KEYS = ['observed', 'sensitivity', 'stable', 'persistence', 'irreversibility', 'unknown'];
+// §22 evidence classes. Only these three are "evidence-backed"; `unknown` is the fourth class —
+// evidence AGAINST unwarranted certainty (§12.6: "Unknown is not evidence of guilt"), so it can force
+// PENDING but must never on its own manufacture a BLOCK. A missing/invalid class is downgraded to
+// `unknown` — you cannot convert an unbounded "possible" into "true" (§22).
+const EVIDENCE_BACKED = ['observed', 'derived', 'counterfactual-bounded'];
+
+const DEFAULT_THRESHOLDS = Object.freeze({
+  tauPlus: 0.6,   // E⁺ must reach this to support PASS
+  tauMinus: 0.5,  // E⁻ above this blocks PASS (=> PENDING)
+  tauBlock: 0.8,  // E⁻ at/above this, evidence-backed, is a hard BLOCK
+  tauT: 0.6, tauO: 0.6, tauA: 0.6, // TOA gate thresholds
+  tauC: 0.5,      // evidence-coverage floor (also the non-legal coverage floor)
+});
+
+/** escortPositive(items, q) — Gary §4/§10: the q-weighted positive map
+ *  E⁺_q = Σ p_i^q s_i / Σ p_i^q (Tsallis escort). For q<1 it flattens the weighting, so a low-prior
+ *  but strong item keeps real pull — minority counterevidence stays visible. items: [{support, weight}]
+ *  with support s ∈ [0,1], weight p ≥ 0. Returns { ok, value } (value 0 when no admissible evidence). */
+function escortPositive(items, q = Q_BASELINE) {
+  if (!isArr(items)) return { ok: false, why: 'positive evidence must be an array' };
+  const qq = isNum(q) && q > 0 ? q : Q_BASELINE;
+  let num = 0, den = 0, n = 0;
+  for (const it of items) {
+    if (!isObj(it)) continue;
+    const s = clamp01(it.support);
+    const p = isNum(it.weight) && it.weight > 0 ? it.weight : 0;
+    if (p <= 0) continue;
+    const w = Math.pow(Math.max(p, P_FLOOR), qq);
+    num += w * s;
+    den += w;
+    n += 1;
+  }
+  if (den <= 0) return { ok: true, value: 0, count: 0 }; // no admissible support => no positive case
+  return { ok: true, value: num / den, count: n };
+}
+
+/** toaGate(toa, th) — Gary §11: Truth / Openness / Accountability is a HARD gate, never a score to
+ *  average. G_TOA = 1 iff all three clear their thresholds. If it fails, PASS is impossible. */
+function toaGate(toa, th = DEFAULT_THRESHOLDS) {
+  const t = clamp01(isObj(toa) ? toa.truth : undefined);
+  const o = clamp01(isObj(toa) ? toa.openness : undefined);
+  const a = clamp01(isObj(toa) ? toa.accountability : undefined);
+  const failed = [];
+  if (t < th.tauT) failed.push('truth');
+  if (o < th.tauO) failed.push('openness');
+  if (a < th.tauA) failed.push('accountability');
+  return { pass: failed.length === 0, truth: t, openness: o, accountability: a, failed };
+}
+
+/** negativeMap(neg) — Gary §12/§13: the adversary. E⁻ = max(N_obs, N_sens, N_stable, N_persist,
+ *  N_irr, N_unknown). Each component is { score ∈ [0,1], class }. A component whose class is not an
+ *  evidence-backed class (observed / derived / counterfactual-bounded) is admitted only as `unknown`
+ *  — it can raise PENDING but not, by itself, a BLOCK. */
+function negativeMap(neg) {
+  const src = isObj(neg) ? neg : {};
+  const components = {};
+  let Eminus = 0, dominant = null, dominantClass = 'unknown';
+  let unknownScore = 0, evidenceBackedPresent = false;
+  for (const key of NEGATIVE_KEYS) {
+    const c = isObj(src[key]) ? src[key] : {};
+    const score = clamp01(c.score);
+    let cls = isStr(c.class) ? c.class : 'unknown';
+    // `unknown` component is inherently the unknown class; everything else must EARN an evidence class.
+    if (key === 'unknown') cls = 'unknown';
+    else if (!EVIDENCE_BACKED.includes(cls)) cls = 'unknown'; // §22: "possible" is not "true"
+    const backed = EVIDENCE_BACKED.includes(cls);
+    if (backed && score > 0) evidenceBackedPresent = true;
+    if (cls === 'unknown') unknownScore = Math.max(unknownScore, score);
+    components[key] = { score, class: cls, backed };
+    if (score > Eminus) { Eminus = score; dominant = key; dominantClass = cls; }
+  }
+  return { ok: true, Eminus, dominant, dominantClass, unknownScore, evidenceBackedPresent, components };
+}
+
+/**
+ * decide(caseInput) — run both maps and return the verdict + every field a receipt needs.
+ * caseInput = {
+ *   action, positive:[{id,support,weight}], negative:{observed,sensitivity,stable,persistence,
+ *   irreversibility,unknown each {score,class}}, toa:{truth,openness,accountability},
+ *   law:{status:0|1, nonlegalCoverage}, coverage, humanReviewRequired, q, thresholds
+ * }
+ * verdict ∈ PASS | BLOCK | PENDING, and PENDING ("I DON'T KNOW", §19) is a first-class result.
+ */
+function decide(caseInput) {
+  if (!isObj(caseInput)) return { ok: false, why: 'a decision case is an object' };
+  const th = { ...DEFAULT_THRESHOLDS, ...(isObj(caseInput.thresholds) ? caseInput.thresholds : {}) };
+  const q = isNum(caseInput.q) && caseInput.q > 0 ? caseInput.q : Q_BASELINE;
+
+  const pos = escortPositive(isArr(caseInput.positive) ? caseInput.positive : [], q);
+  const Eplus = pos.ok ? pos.value : 0;
+  const toa = toaGate(caseInput.toa, th);
+  const neg = negativeMap(caseInput.negative);
+  const Eminus = neg.Eminus;
+
+  const law = isObj(caseInput.law) ? caseInput.law : {};
+  const legal = law.status === 1 ? 1 : law.status === 0 ? 0 : null;
+  const nonlegalCoverage = clamp01(law.nonlegalCoverage);
+  const coverage = clamp01(caseInput.coverage);
+  const humanReviewRequired = caseInput.humanReviewRequired === true;
+
+  // ── the decision, in order (§16/§19). E⁺ can only ADD the requirement E⁺≥τ⁺; it can never
+  //    lift the verdict over a failed gate or a severe adversary. Non-compensating by construction. ──
+  let verdict, reasons = [];
+
+  // 1. Hard BLOCK: an evidence-backed severe failure. Unknown-class severe is NOT a block (§12.6).
+  if (Eminus >= th.tauBlock && EVIDENCE_BACKED.includes(neg.dominantClass)) {
+    verdict = 'BLOCK';
+    reasons.push(`severe evidence-backed negative (${neg.dominant}=${Eminus.toFixed(2)} ≥ ${th.tauBlock}) — non-compensating`);
+  } else {
+    // 2. Not blocked — is it a clean PASS, or PENDING ("I don't know")?
+    if (!toa.pass) reasons.push('TOA gate failed: ' + toa.failed.join(', '));
+    if (Eplus < th.tauPlus) reasons.push(`positive support below threshold (E⁺=${Eplus.toFixed(2)}, need ${th.tauPlus})`);
+    if (Eminus > th.tauMinus) reasons.push(`negative evidence above tolerance (E⁻=${Eminus.toFixed(2)}, limit ${th.tauMinus})`);
+    if (coverage < th.tauC) reasons.push(`evidence coverage insufficient (C=${coverage.toFixed(2)}, need ${th.tauC})`);
+    if (legal === 1 && nonlegalCoverage < th.tauC) reasons.push('legal-only: legal but independent non-legal ethical coverage is insufficient (law is evidence, not a PASS)');
+    if (neg.unknownScore >= th.tauMinus) reasons.push(`critical unknown unresolved (N_unknown=${neg.unknownScore.toFixed(2)})`);
+    if (humanReviewRequired) reasons.push('human ethical approval required');
+    verdict = reasons.length === 0 ? 'PASS' : 'PENDING';
+  }
+
+  return {
+    ok: true,
+    verdict,
+    action: isStr(caseInput.action) ? caseInput.action : null,
+    positiveScore: Eplus,               // E⁺ — the witness
+    negativeScore: Eminus,              // E⁻ — the adversary
+    negative: neg.components,           // the six components, each with its evidence class
+    dominantNegative: neg.dominant,
+    toa: { truth: toa.truth, openness: toa.openness, accountability: toa.accountability, gate: toa.pass ? 1 : 0 },
+    legalStatus: legal,
+    legalIsDispositive: false,          // §15: law is one evidence channel, never the verdict
+    nonlegalCoverage,
+    evidenceCoverage: coverage,
+    counterevidencePresent: neg.evidenceBackedPresent,
+    criticalUnknown: neg.unknownScore,
+    humanReviewRequired,
+    qBaseline: Q_BASELINE,
+    qOperational: q,
+    thresholds: th,
+    reasons,
+  };
+}
+
+// The receipt body: every field a verdict is derived from + the verdict, in a stable order, so the
+// receipt_hash covers the whole thing (a tamper to any field is caught on the way back in).
+function receiptBody(decision, meta) {
+  return {
+    kind: 'dual-map-ethics-receipt', v: 1,
+    createdAt: isStr(meta && meta.createdAt) ? meta.createdAt : null,
+    action: decision.action,
+    verdict: decision.verdict,
+    positiveScore: decision.positiveScore,
+    negativeScore: decision.negativeScore,
+    negative: decision.negative,
+    dominantNegative: decision.dominantNegative,
+    toa: decision.toa,
+    legalStatus: decision.legalStatus,
+    legalIsDispositive: decision.legalIsDispositive,
+    nonlegalCoverage: decision.nonlegalCoverage,
+    evidenceCoverage: decision.evidenceCoverage,
+    counterevidencePresent: decision.counterevidencePresent,
+    criticalUnknown: decision.criticalUnknown,
+    humanReviewRequired: decision.humanReviewRequired,
+    qBaseline: decision.qBaseline,
+    qOperational: decision.qOperational,
+    thresholds: decision.thresholds,
+    reasons: decision.reasons,
+  };
+}
+
+/** seal(caseInput, meta) — decide, then bind it into a self-verifying audit receipt (§24). The
+ *  derivation_hash pins the exact inputs; the receipt_hash pins the whole verdict body. meta.createdAt
+ *  is the caller's timestamp (this kernel has no clock). */
+function seal(caseInput, meta) {
+  const decision = decide(caseInput);
+  if (!decision.ok) return decision;
+  const dh = sha256(canon(caseInput));
+  if (!dh.ok) return { ok: false, why: 'could not hash the decision inputs' };
+  const body = { ...receiptBody(decision, meta), derivationHash: dh.hash };
+  const rh = sha256(canon(body));
+  if (!rh.ok) return { ok: false, why: 'could not hash the receipt body' };
+  return { ok: true, receipt: { ...body, receiptHash: rh.hash } };
+}
+
+/** verifyReceipt(receipt) — recompute the receipt hash over every field and refuse on any
+ *  disagreement. A verdict flipped from BLOCK to PASS, or a lowered negativeScore, is caught here —
+ *  never trusts the receipt's own claim about itself. */
+function verifyReceipt(receipt) {
+  if (!isObj(receipt)) return { ok: false, why: 'not a dual-map receipt' };
+  if (receipt.kind !== 'dual-map-ethics-receipt') return { ok: false, why: 'not a dual-map-ethics-receipt' };
+  if (receipt.v !== 1) return { ok: false, why: `unknown receipt version ${String(receipt.v)}` };
+  if (!isStr(receipt.receiptHash) || !isStr(receipt.derivationHash)) return { ok: false, why: 'the receipt carries no hash' };
+  const { receiptHash, ...body } = receipt;
+  const rh = sha256(canon(body));
+  if (!rh.ok) return { ok: true, valid: false, why: 'could not recompute the receipt hash' };
+  if (rh.hash !== receiptHash) return { ok: true, valid: false, why: 'the receipt hash does not match its fields — the receipt was edited after it was sealed' };
+  return { ok: true, valid: true, verdict: receipt.verdict, why: 'receipt intact — verdict and every field agree with the sealed hash' };
+}
+return { decide, seal, verifyReceipt };
+})();
+
+// ── kernel.mjs ──
+// fallfloor-enterprise · kernel.mjs — the reference design's arithmetic and rules. Pure and total: no I/O, no clock,
+// garbage in → a structured refusal, never an exception. The page runs this exact file (tools/make-page.mjs inlines it),
+// CI mutation-gates it, and every number the page shows is computed here from sourced inputs.
+//
+//   sourced figures · capacity (laptop floor + core nodes) · 5-year cost, both sides, every line with its basis ·
+//   the compliance map (who holds which duty, on which stack) · the go/no-go board (a dual-map gate per decision,
+//   fed by fallfloor's receipted evidence).
+//
+// The go/no-go board uses dualmap.mjs — a faithful implementation of Gary W. Floyd, Lumiea Systems Research
+// Division — ThunderStruck Service LLC — "From GEP Stabilization to Dual-Map Ethical Reasoning," Derivation v0.2.
+
+const isStr = (v) => typeof v === 'string' && v.length > 0;
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const isObj = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
+const r2 = (x) => Math.round(x * 100) / 100;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const HTTPS = /^https:\/\/\S+$/;
+const fail = (why) => ({ ok: false, why });
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+// SOURCED FIGURES — nothing enters the cost model without saying where it came from
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+const BASES = ['list-price', 'measured', 'estimate', 'assumption'];
+const SIDES = ['local', 'cloud'];
+
+/** sourced(f) — { basis, source?, checked?, why? }: a list price needs an https source and the date checked; a
+ *  measured figure needs its source; an estimate or assumption needs the reason in words. */
+function sourced(f) {
+  if (!isObj(f) || !BASES.includes(f.basis)) return fail('basis must be one of ' + BASES.join(', '));
+  if (f.basis === 'list-price') return HTTPS.test(f.source || '') && DATE.test(f.checked || '') ? { ok: true } : fail('a list price needs its https source and the date it was checked');
+  if (f.basis === 'measured') return isStr(f.source) ? { ok: true } : fail('a measured figure names where it was measured');
+  return isStr(f.why) ? { ok: true } : fail('an ' + f.basis + ' says why, in words');
+}
+
+/** exVat(amount, vat, rate) — list prices compared net of VAT. vat: 'excluded' | 'included' | 'not stated'. */
+function exVat(amount, vat, rate) {
+  if (!isNum(amount) || amount < 0 || !isNum(rate) || rate < 0) return null;
+  if (vat === 'included') return amount / (1 + rate);
+  if (vat === 'excluded' || vat === 'not stated') return amount;
+  return null;
+}
+
+/** toGbp(amount, currency, gbpPerUsd) */
+function toGbp(amount, currency, gbpPerUsd) {
+  if (!isNum(amount) || !isNum(gbpPerUsd) || gbpPerUsd <= 0) return null;
+  if (currency === 'GBP') return amount;
+  if (currency === 'USD') return amount * gbpPerUsd;
+  return null;
+}
+
+/** apiCostPerItem(tokensIn, tokensOut, price, gbpPerUsd) — GBP per item at a USD per-million-token list price. */
+function apiCostPerItem(tokensIn, tokensOut, price, gbpPerUsd) {
+  if (!isNum(tokensIn) || !isNum(tokensOut) || tokensIn < 0 || tokensOut < 0) return null;
+  if (!isObj(price) || !isNum(price.inPerM) || !isNum(price.outPerM) || price.inPerM < 0 || price.outPerM < 0) return null;
+  if (!isNum(gbpPerUsd) || gbpPerUsd <= 0) return null;
+  return ((tokensIn * price.inPerM + tokensOut * price.outPerM) / 1e6) * gbpPerUsd;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+// CAPACITY — the laptop floor from MEASURED seconds per item; the core nodes from a bandwidth-bound planning figure
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+/** coreSecondsPerItem(tokensIn, tokensOut, core) — read the prompt at prefillTokPerSec, then generate at
+ *  decode = efficiency × bandwidth ÷ weights (generation is memory-bandwidth bound). */
+function coreSecondsPerItem(tokensIn, tokensOut, core) {
+  if (!isNum(tokensIn) || !isNum(tokensOut) || tokensIn < 0 || tokensOut < 0 || !isObj(core)) return null;
+  const { bandwidthGBs, weightsGB, efficiency, prefillTokPerSec } = core;
+  if (![bandwidthGBs, weightsGB, efficiency, prefillTokPerSec].every((v) => isNum(v) && v > 0) || efficiency > 1) return null;
+  const decode = (efficiency * bandwidthGBs) / weightsGB;
+  return { seconds: tokensIn / prefillTokPerSec + tokensOut / decode, decodeTokPerSec: decode };
+}
+
+/** capacity(input) → per year: laptop-floor hours and utilisation, core hours and the nodes needed (N + spare). */
+function capacity(input) {
+  if (!isObj(input) || !Array.isArray(input.workloads) || input.workloads.length === 0) return fail('capacity needs workloads');
+  const { workloads, floor, core, growth, years } = input;
+  if (!isObj(floor) || ![floor.laptops, floor.nodeShare, floor.hoursPerDay, floor.daysPerMonth].every((v) => isNum(v) && v >= 0) || floor.nodeShare > 1) return fail('floor: laptops, nodeShare (0–1), hoursPerDay, daysPerMonth');
+  if (!isObj(core) || !isNum(core.hoursPerMonth) || core.hoursPerMonth <= 0 || !isNum(core.targetUtil) || core.targetUtil <= 0 || core.targetUtil > 1 || !Number.isInteger(core.spare) || core.spare < 0) return fail('core: hoursPerMonth, targetUtil (0–1], spare');
+  if (!isNum(growth) || growth < -0.5 || growth > 5 || !Number.isInteger(years) || years < 1 || years > 10) return fail('growth and years (1–10)');
+  const per = [];
+  for (const w of workloads) {
+    if (!isObj(w) || !isStr(w.id) || !['laptop', 'core'].includes(w.tier) || !isNum(w.perMonth) || w.perMonth < 0) return fail('each workload: id, tier (laptop|core), perMonth');
+    if (w.tier === 'laptop') {
+      if (!isNum(w.secondsPerItem) || w.secondsPerItem < 0) return fail(w.id + ': a laptop workload needs its measured seconds per item');
+      per.push({ id: w.id, tier: 'laptop', secondsPerItem: w.secondsPerItem, perMonth: w.perMonth });
+    } else {
+      const c = coreSecondsPerItem(w.tokensIn, w.tokensOut, core);
+      if (c === null) return fail(w.id + ': a core workload needs tokensIn, tokensOut and a valid core node');
+      per.push({ id: w.id, tier: 'core', secondsPerItem: r2(c.seconds), perMonth: w.perMonth });
+    }
+  }
+  const avail = floor.laptops * floor.nodeShare * floor.hoursPerDay * floor.daysPerMonth;
+  const perYear = [];
+  for (let y = 0; y < years; y++) {
+    const f = Math.pow(1 + growth, y);
+    let lap = 0, cor = 0;
+    for (const p of per) { const h = (p.perMonth * f * p.secondsPerItem) / 3600; if (p.tier === 'laptop') lap += h; else cor += h; }
+    const nodes = cor > 0 ? Math.ceil(cor / (core.hoursPerMonth * core.targetUtil)) + core.spare : 0;
+    perYear.push({ year: y + 1, laptopHours: r2(lap), laptopUtil: avail > 0 ? Math.round((lap / avail) * 1000) / 1000 : null, coreHours: r2(cor), coreNodes: nodes, floorOverloaded: lap > avail });
+  }
+  const dec = coreSecondsPerItem(1, 1, core);
+  return { ok: true, laptopHoursAvailable: r2(avail), decodeTokPerSec: dec ? r2(dec.decodeTokPerSec) : null, perWorkload: per, perYear };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+// COST — cash per year for each side, every line carrying its basis; totals, cumulative, break-even, and how much
+// of each side's total rests on estimates and assumptions rather than list prices and measurements
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+/** tco(lines, years) — lines: [{ id, side, label, basis, source|why, perYear: [gbp × years] }]. */
+function tco(lines, years) {
+  if (!Array.isArray(lines) || lines.length === 0 || !Number.isInteger(years) || years < 1) return fail('tco(lines, years)');
+  const ids = new Set();
+  const perYear = Array.from({ length: years }, (_, i) => ({ year: i + 1, local: 0, cloud: 0 }));
+  const total = { local: 0, cloud: 0 };
+  const byBasis = { local: {}, cloud: {} };
+  const out = [];
+  for (const l of lines) {
+    if (!isObj(l) || !isStr(l.id) || ids.has(l.id)) return fail('each line needs a unique id');
+    ids.add(l.id);
+    if (!SIDES.includes(l.side)) return fail(l.id + ': side must be local or cloud');
+    if (!isStr(l.label)) return fail(l.id + ': label');
+    const s = sourced(l); if (!s.ok) return fail(l.id + ': ' + s.why);
+    if (!Array.isArray(l.perYear) || l.perYear.length !== years || !l.perYear.every((v) => isNum(v) && v >= 0)) return fail(l.id + ': perYear must hold ' + years + ' amounts ≥ 0');
+    const t = l.perYear.reduce((a, v) => a + v, 0);
+    l.perYear.forEach((v, i) => { perYear[i][l.side] += v; });
+    total[l.side] += t;
+    byBasis[l.side][l.basis] = (byBasis[l.side][l.basis] || 0) + t;
+    out.push({ id: l.id, side: l.side, label: l.label, basis: l.basis, total: r2(t), perYear: l.perYear.map(r2) });
+  }
+  let cl = 0, cc = 0, breakEvenYear = null;
+  const cumulative = perYear.map((p) => { cl += p.local; cc += p.cloud; if (breakEvenYear === null && cl <= cc) breakEvenYear = p.year; return { year: p.year, local: r2(cl), cloud: r2(cc) }; });
+  const share = (side) => Object.fromEntries(BASES.map((b) => [b, total[side] > 0 ? Math.round(((byBasis[side][b] || 0) / total[side]) * 1000) / 1000 : 0]));
+  return {
+    ok: true, lines: out, perYear: perYear.map((p) => ({ year: p.year, local: r2(p.local), cloud: r2(p.cloud) })), cumulative,
+    total: { local: r2(total.local), cloud: r2(total.cloud), difference: r2(total.cloud - total.local) }, breakEvenYear,
+    basisShare: { local: share('local'), cloud: share('cloud') },
+  };
+}
+
+/** plan(m) — the whole design from its inputs: capacity → cost lines → tco. m = { company, prices, evidence, choices }. */
+function plan(m) {
+  if (!isObj(m) || !isObj(m.company) || !isObj(m.prices) || !isObj(m.evidence)) return fail('plan needs company, prices and evidence');
+  const C = m.company, P = m.prices, E = m.evidence;
+  const ch = { ...(isObj(C.choices) ? C.choices : {}), ...(isObj(m.choices) ? m.choices : {}) };
+  const years = C.years, growth = isObj(C.growth) ? C.growth.value : undefined;
+  const fx = isObj(P.fx) ? P.fx.gbpPerUsd : undefined, vatRate = isObj(P.vatRate) ? P.vatRate.value : undefined;
+  if (!isNum(fx) || !isNum(vatRate)) return fail('prices need fx and vatRate');
+  if (!Array.isArray(C.workloads)) return fail('company.workloads');
+  // workloads with their tokens and (for the floor) measured seconds
+  const wl = [];
+  for (const w of C.workloads) {
+    if (!isObj(w) || !isStr(w.id)) return fail('each workload needs an id');
+    if (w.tokens === 'measured') {
+      const ev = E[w.evidence];
+      if (!isObj(ev) || !isNum(ev.tokensIn) || !isNum(ev.tokensOut) || !isNum(ev.laptopSecondsPerItem)) return fail(w.id + ': its evidence (' + String(w.evidence) + ') is missing');
+      wl.push({ ...w, tokensIn: ev.tokensIn, tokensOut: ev.tokensOut, secondsPerItem: ev.laptopSecondsPerItem, tokenBasis: 'measured' });
+    } else if (w.tokens === 'estimate') wl.push({ ...w, tokenBasis: 'estimate' });
+    else return fail(w.id + ': tokens must be measured or estimate');
+  }
+  const node = P.coreNode, core = C.core;
+  if (!isObj(node) || !isObj(core) || !isObj(core.model)) return fail('core node and core settings');
+  const coreIn = { bandwidthGBs: node.bandwidthGBs, weightsGB: core.model.weightsGB, efficiency: core.efficiency && core.efficiency.value, prefillTokPerSec: core.prefillTokPerSec && core.prefillTokPerSec.value,
+    hoursPerMonth: core.hoursPerMonth && core.hoursPerMonth.value, targetUtil: core.targetUtil && core.targetUtil.value, spare: core.spare && core.spare.value };
+  const fl = C.floor || {};
+  const cap = capacity({ workloads: wl, floor: { laptops: C.profile && C.profile.laptops, nodeShare: fl.nodeShare && fl.nodeShare.value, hoursPerDay: fl.hoursPerDay && fl.hoursPerDay.value, daysPerMonth: fl.daysPerMonth && fl.daysPerMonth.value }, core: coreIn, growth, years });
+  if (!cap.ok) return cap;
+  const Y = (fn) => Array.from({ length: years }, (_, i) => fn(i));
+  const grow = (i) => Math.pow(1 + growth, i);
+  const lines = [];
+
+  // ── the corporate / cloud side ──
+  const seat = (P.seats || []).find((s) => s.id === ch.seat);
+  if (!seat) return fail('unknown seat product: ' + String(ch.seat));
+  const seatShare = ch.seatShare;
+  if (!isNum(seatShare) || seatShare < 0 || seatShare > 1) return fail('seatShare must be 0–1');
+  const seatsN = Math.round((C.profile && C.profile.knowledgeWorkers) * seatShare);
+  if (!Number.isInteger(seatsN) || seatsN < 0) return fail('profile.knowledgeWorkers');
+  const warnings = [];
+  if (seat.maxSeats !== null && seat.maxSeats !== undefined && seatsN > seat.maxSeats) warnings.push(seat.product + ' is sold for up to ' + seat.maxSeats + ' seats; this company needs ' + seatsN + '.');
+  const seatGbp = toGbp(exVat(seat.price, seat.vat, vatRate), seat.currency, fx);
+  if (seatGbp === null) return fail('seat price');
+  lines.push({ id: 'cloud-seats', side: 'cloud', label: seatsN + ' × ' + seat.product + ' (' + seat.per + ')', basis: 'list-price', source: seat.source, checked: seat.checked, perYear: Y(() => seatsN * seatGbp * 12) });
+  const api = (P.api || []).find((a) => a.id === ch.apiModel);
+  if (!api) return fail('unknown API model: ' + String(ch.apiModel));
+  for (const w of wl) {
+    const viaApi = w.cloud === 'api' || (w.cloud === 'seats' && seat.plusUsage === true);
+    if (!viaApi) continue;
+    const per = apiCostPerItem(w.tokensIn, w.tokensOut, api, fx);
+    if (per === null) return fail(w.id + ': tokens');
+    const line = { id: 'cloud-api-' + w.id, side: 'cloud', label: w.name + ' — ' + api.provider + ' ' + api.model + ' at list price', perYear: Y((i) => w.perMonth * grow(i) * 12 * per) };
+    if (w.tokenBasis === 'measured') lines.push({ ...line, basis: 'list-price', source: api.source, checked: api.checked });
+    else lines.push({ ...line, basis: 'estimate', why: 'list price × estimated tokens per item (' + w.tokensIn + ' in / ' + w.tokensOut + ' out)' });
+  }
+  // ── staff and compliance, both sides ──
+  const S = C.staff, sal = P.salaries && P.salaries.roles;
+  if (!isObj(S) || !isObj(sal) || !isObj(S.onCost) || !isNum(S.onCost.value) || S.onCost.value < 1) return fail('staff and salaries');
+  for (const side of SIDES) {
+    let cost = 0;
+    for (const r of S[side] || []) {
+      if (!isObj(r) || !isNum(r.fte) || r.fte < 0 || !isObj(sal[r.soc]) || !isNum(sal[r.soc].median)) return fail(side + ' staff: each role needs fte and an ONS occupation code with a median');
+      cost += r.fte * sal[r.soc].median * S.onCost.value;
+    }
+    const fte = (S[side] || []).reduce((a, r) => a + r.fte, 0);
+    lines.push({ id: side + '-staff', side, label: fte + ' FTE (' + (S[side] || []).map((r) => r.role).join('; ') + ')', basis: 'estimate', why: 'ONS ASHE 2025 median salaries × ' + S.onCost.value + ' on-cost; team size is this design\'s assumption', perYear: Y(() => cost) });
+  }
+  const CP = C.compliance;
+  if (!isObj(CP) || !isObj(CP.dayRate) || !isNum(CP.dayRate.value) || CP.dayRate.value < 0) return fail('compliance');
+  for (const side of SIDES) {
+    const d = CP[side];
+    if (!isObj(d) || !isNum(d.daysYear1) || !isNum(d.daysPerYear) || d.daysYear1 < 0 || d.daysPerYear < 0) return fail(side + ' compliance days');
+    lines.push({ id: side + '-compliance', side, label: 'Compliance work: ' + d.why, basis: 'assumption', why: d.daysYear1 + ' days in year 1, then ' + d.daysPerYear + ' a year, at ' + CP.dayRate.value + ' a day', perYear: Y((i) => (i === 0 ? d.daysYear1 : d.daysPerYear) * CP.dayRate.value) });
+  }
+  // ── the local-first side ──
+  const nodeGbp = toGbp(exVat(node.price, node.vat, vatRate), node.currency, fx);
+  if (nodeGbp === null || !isObj(core.lifeYears) || !Number.isInteger(core.lifeYears.value) || core.lifeYears.value < 1) return fail('core node price and lifeYears');
+  const life = core.lifeYears.value;
+  const bought = [];          // nodes bought per year (new capacity + replacements at end of life)
+  for (let i = 0; i < years; i++) {
+    const need = cap.perYear[i].coreNodes;
+    const alive = bought.reduce((a, b, j) => a + (i - j < life ? b : 0), 0);
+    bought.push(Math.max(0, need - alive));
+  }
+  lines.push({ id: 'local-core-nodes', side: 'local', label: 'Core nodes: ' + node.product + ', bought as capacity grows and replaced every ' + life + ' years', basis: 'list-price', source: node.source, checked: node.checked, perYear: bought.map((b) => b * nodeGbp) });
+  const el = P.electricity, lp = P.laptopPower;
+  if (!isObj(el) || !isNum(el.pencePerKwh) || !isObj(lp) || !isNum(lp.wattsHigh) || !isNum(node.maxWatts)) return fail('electricity, laptop power, node power');
+  lines.push({ id: 'local-core-power', side: 'local', label: 'Core node electricity at the published maximum power, every powered hour', basis: 'estimate', why: node.maxWatts + ' W (Apple spec, maximum continuous) × ' + coreIn.hoursPerMonth + ' h a month × ' + el.pencePerKwh + 'p/kWh (DESNZ) — an upper bound', perYear: Y((i) => cap.perYear[i].coreNodes * node.maxWatts * coreIn.hoursPerMonth * 12 / 1000 * el.pencePerKwh / 100) });
+  lines.push({ id: 'local-floor-power', side: 'local', label: 'Laptop electricity for the AI work on the floor', basis: 'estimate', why: 'measured laptop-hours × ' + lp.wattsHigh + ' W (the chip\'s maximum turbo power) × ' + el.pencePerKwh + 'p/kWh (DESNZ) — an upper bound', perYear: Y((i) => cap.perYear[i].laptopHours * 12 * lp.wattsHigh / 1000 * el.pencePerKwh / 100) });
+  lines.push({ id: 'local-laptops', side: 'local', label: 'Laptops: already owned and refreshed on the normal cycle', basis: 'assumption', why: 'no new laptops are bought for this; wear is not costed', perYear: Y(() => 0) });
+  lines.push({ id: 'local-models', side: 'local', label: 'Model licences: Qwen2.5 Instruct weights under Apache 2.0', basis: 'list-price', source: 'https://huggingface.co/Qwen/Qwen2.5-32B-Instruct', checked: P.checked, perYear: Y(() => 0) });
+  const t = tco(lines, years);
+  if (!t.ok) return t;
+  return { ok: true, capacity: cap, tco: t, seats: seatsN, seatProduct: seat.product, apiModel: api.provider + ' ' + api.model, nodesBought: bought, warnings };
+}
+
+/** seatShareBreakEven(m) — what has to be true: the share of knowledge workers who would otherwise get a seat above
+ *  which local-first costs less over the horizon. The corporate total is linear in the seat share (everything else
+ *  on both sides does not depend on it), so two plans pin the line. null when seats change nothing. */
+function seatShareBreakEven(m) {
+  if (!isObj(m)) return fail('seatShareBreakEven needs the same input as plan');
+  const at = (s) => plan({ ...m, choices: { ...(isObj(m.choices) ? m.choices : {}), seatShare: s } });
+  const p0 = at(0), p1 = at(1);
+  if (!p0.ok) return p0;
+  if (!p1.ok) return p1;
+  const slope = p1.tco.total.cloud - p0.tco.total.cloud;
+  if (slope <= 0) return { ok: true, share: null, why: 'seats add nothing to the corporate side' };
+  const s = (p0.tco.total.local - p0.tco.total.cloud) / slope;
+  return { ok: true, share: Math.round(s * 1000) / 1000, localAlwaysCheaper: s <= 0, cloudAlwaysCheaper: s > 1 };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+// THE COMPLIANCE MAP — for one workload on one stack: which duties apply, from when, and what the stack does to them
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+const DEPLOYMENTS = ['local', 'cloud', 'saas'];
+const STATUSES = ['removed', 'eased', 'yours', 'shared', 'unchanged'];
+const CONDITIONS = ['always', 'personalData', 'interactsWithPublic', 'significantDecision', 'highRisk', 'creditScoring', 'euOutput', 'providerAbroad', 'trainsOnPersonalData'];
+
+/** obligations(workload, deployment, duties, ctx) — ctx: { asOf: 'YYYY-MM-DD', providerAbroad: bool }. */
+function obligations(workload, deployment, duties, ctx) {
+  if (!isObj(workload) || !isObj(workload.flags)) return fail('a workload with flags');
+  if (!DEPLOYMENTS.includes(deployment)) return fail('deployment must be local, cloud or saas');
+  if (!Array.isArray(duties)) return fail('duties must be a list');
+  if (!isObj(ctx) || !DATE.test(ctx.asOf || '')) return fail('ctx.asOf must be a date');
+  const f = { ...workload.flags, always: true, providerAbroad: ctx.providerAbroad === true };   // shown on every stack, so the local column can say 'removed'
+  const items = [];
+  const counts = Object.fromEntries(STATUSES.map((s) => [s, 0]));
+  for (const d of duties) {
+    if (!isObj(d) || !isStr(d.id) || !CONDITIONS.includes(d.appliesIf) || !isObj(d.status) || !STATUSES.includes(d.status[deployment]) || !DATE.test(d.from || '') || !HTTPS.test(d.url || '') || !DATE.test(d.checked || '')) return fail('duty ' + String(d && d.id) + ' is malformed (condition, status per stack, from, https url, checked)');
+    if (f[d.appliesIf] !== true) continue;
+    const status = d.status[deployment];
+    counts[status]++;
+    items.push({ id: d.id, ref: d.ref, title: d.title, status, inForce: d.from <= ctx.asOf, from: d.from, note: isObj(d.note) ? d.note[deployment] : '', url: d.url, checked: d.checked });
+  }
+  const role = deployment === 'saas' ? 'deployer (the vendor is the provider of its assistant)' : 'provider and deployer (the company puts its own AI system into service)';
+  return { ok: true, deployment, role, items, counts, applying: items.length };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+// THE GO / NO-GO BOARD — each deployment decision is a dual-map case built from fallfloor's receipted evidence.
+// E⁺ (the witness) is what the evidence supports; E⁻ (the adversary) is the evidence-supported way it fails; one
+// severe, evidence-backed failure BLOCKs, and an unmeasured risk holds the decision at PENDING (never a BLOCK).
+// Method: Gary W. Floyd, Lumiea Systems Research Division — ThunderStruck Service LLC — "From GEP Stabilization to
+// Dual-Map Ethical Reasoning," Derivation v0.2. The thresholds are this design's policy, published and changeable.
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+const DECISIONS = ['support-unsupervised', 'support-assisted', 'screening-auto', 'screening-review', 'hr-routing', 'floor-async', 'credit-decisions'];
+const clip = (x) => Math.min(1, Math.max(0, Math.round(x * 1e6) / 1e6));   // rounded: a ratio of 0.15 / 0.3 is 0.5, not 0.5000000000000001
+const neg0 = () => ({ observed: { score: 0, class: 'observed' }, sensitivity: { score: 0, class: 'derived' }, stable: { score: 0, class: 'derived' }, persistence: { score: 0, class: 'derived' }, irreversibility: { score: 0, class: 'derived' }, unknown: { score: 0, class: 'unknown' } });
+
+/** gateCase(id, ev, policy) → a dual-map case input (see dualmap.decide). */
+function gateCase(id, ev, policy) {
+  if (!DECISIONS.includes(id)) return fail('unknown decision: ' + String(id));
+  if (!isObj(ev) || !isObj(ev.support) || !isObj(ev.security) || !isObj(ev.hr)) return fail('evidence needs support, security and hr');
+  if (!isObj(policy)) return fail('policy');
+  const num = (v) => (isNum(v) ? v : NaN);
+  const S = ev.support, X = ev.security, H = ev.hr;
+  const noLoss = S.lostChain === 0 && S.lostPool === 0 ? 1 : 0;
+  const receipts = isObj(ev.from) && isNum(ev.from.hops) && ev.from.hops > 0 ? 1 : 0;
+  const toa = { truth: receipts, openness: isObj(ev.preregistered) ? 1 : 0, accountability: policy.ownerAssigned === true ? 1 : 0 };
+  const coverage = (n) => clip(num(n) / num(policy.minItems));
+  const c = { action: id, positive: [], negative: neg0(), toa, law: { status: null, nonlegalCoverage: 1 }, coverage: 1, humanReviewRequired: false };
+  if (id === 'support-unsupervised') {
+    c.positive = [{ id: 'end-to-end accuracy', support: num(S.e2e), weight: 3 }, { id: 'nothing lost', support: noLoss, weight: 1 }, { id: 'receipts verified', support: receipts, weight: 1 }];
+    c.negative.observed = { score: clip(num(S.silent) / num(policy.maxSilentErrorRate)), class: 'observed' };
+    c.negative.irreversibility = { score: 0.5, class: 'derived' };   // a sent reply cannot be unsent
+    c.coverage = coverage(S.items);
+  } else if (id === 'support-assisted') {
+    c.positive = [{ id: 'end-to-end accuracy', support: num(S.e2e), weight: 3 }, { id: 'reply gate pass rate', support: num(S.replyPass), weight: 1 }, { id: 'nothing lost', support: noLoss, weight: 1 }];
+    c.negative.unknown = { score: clip(num(policy.unmeasuredAgentCatch)), class: 'unknown' };   // how often an agent catches a wrong draft: not measured yet
+    c.coverage = coverage(S.items);
+  } else if (id === 'screening-auto' || id === 'screening-review') {
+    const pos = num(X.caught) + num(X.missed), negs = num(X.wronglyFlagged) + num(X.correctlyPassed);
+    const recall = pos > 0 ? num(X.caught) / pos : 0, fpr = negs > 0 ? num(X.wronglyFlagged) / negs : 1;
+    c.positive = [{ id: 'spam caught', support: recall, weight: 2 }, { id: 'nothing lost', support: noLoss, weight: 1 }];
+    const limit = id === 'screening-auto' ? num(policy.maxAutoFalseFlagRate) : num(policy.maxReviewFalseFlagRate);
+    c.negative.observed = { score: clip(fpr / limit), class: 'observed' };
+    c.negative.unknown = { score: clip(1 - pos / num(policy.minPositiveSamples)), class: 'unknown' };   // too few spam items to trust the catch rate
+    c.coverage = coverage(X.items);
+  } else if (id === 'hr-routing') {
+    c.positive = [{ id: 'routing accuracy', support: num(H.accuracy), weight: 3 }, { id: 'nothing lost', support: noLoss, weight: 1 }, { id: 'receipts verified', support: receipts, weight: 1 }];
+    c.negative.observed = { score: clip((1 - num(H.accuracy)) / num(policy.routingMaxErrorRate)), class: 'observed' };
+    c.negative.irreversibility = { score: 0.1, class: 'derived' };   // a misrouted question costs one more hop
+    c.coverage = coverage(H.items);
+  } else if (id === 'floor-async') {
+    c.positive = [{ id: 'nothing lost when a node died', support: noLoss, weight: 2 }, { id: 'receipts verified', support: receipts, weight: 2 }, { id: 'cold start inside the bar', support: isNum(ev.coldStartSecMax) && ev.coldStartSecMax <= 600 ? 1 : 0, weight: 1 }];
+    c.negative.observed = { score: clip(num(S.p95Sec) / num(policy.asyncP95Sec)), class: 'observed' };
+    c.coverage = coverage(S.items);
+  } else {   // credit-decisions: no evidence exists, and it is high-risk — unknown is not guilt, so it can only be PENDING
+    c.negative.unknown = { score: 1, class: 'unknown' };
+    c.coverage = 0;
+    c.humanReviewRequired = true;
+  }
+  if (c.positive.some((p) => !isNum(p.support)) || Object.values(c.negative).some((n) => !isNum(n.score)) || !isNum(c.coverage)) return fail(id + ': the evidence or the policy is missing a number');
+  return { ok: true, case: c };
+}
+
+/** board(ev, policy, createdAt) — every decision, decided and sealed into a self-verifying receipt. */
+function board(ev, policy, createdAt) {
+  if (!isStr(createdAt)) return fail('board needs the time it is sealed at (the kernel has no clock)');
+  const rows = [];
+  for (const id of DECISIONS) {
+    const g = gateCase(id, ev, policy);
+    if (!g.ok) return g;
+    const s = seal(g.case, { createdAt });
+    if (!s.ok) return s;
+    rows.push({ id, verdict: s.receipt.verdict, positive: Math.round(s.receipt.positiveScore * 1000) / 1000, negative: Math.round(s.receipt.negativeScore * 1000) / 1000, reasons: s.receipt.reasons, receipt: s.receipt });
+  }
+  const tally = { PASS: 0, BLOCK: 0, PENDING: 0 };
+  for (const r of rows) tally[r.verdict]++;
+  return { ok: true, rows, tally, boardHash: sha256(canon(rows.map((r) => r.receipt.receiptHash))).hash };
+}
+// ⟦KERNEL-END⟧
+
+// ── the page: renders from the embedded data with the same kernel ─────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const D = JSON.parse($('floorData').textContent);
+(function () { try { const s = localStorage.getItem('ffe-theme'); if (s) document.documentElement.setAttribute('data-theme', s); } catch {}
+  $('themeBtn').onclick = () => { const c = document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); const n = c === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', n); try { localStorage.setItem('ffe-theme', n); } catch {} }; })();
+const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const gbp = (x) => '£' + Math.round(x).toLocaleString('en-GB');
+const pct = (x) => Math.round(x * 1000) / 10 + '%';
+const chip = (c, t) => '<span class="chip ' + esc(c) + '">' + esc(t || c) + '</span>';
+const link = (u, t) => '<a href="' + esc(u) + '">' + esc(t) + '</a>';
+
+let choices = { ...D.company.choices }, tweaks = { growth: D.company.growth.value, efficiency: D.company.core.efficiency.value, onCost: D.company.staff.onCost.value };
+let policy = { ...D.company.policy };
+function currentPlan() {
+  const company = JSON.parse(JSON.stringify(D.company));
+  company.growth.value = tweaks.growth; company.core.efficiency.value = tweaks.efficiency; company.staff.onCost.value = tweaks.onCost;
+  return plan({ company, prices: D.prices, evidence: D.evidence, choices });
+}
+function currentBreakEven() {
+  const company = JSON.parse(JSON.stringify(D.company));
+  company.growth.value = tweaks.growth; company.core.efficiency.value = tweaks.efficiency; company.staff.onCost.value = tweaks.onCost;
+  return seatShareBreakEven({ company, prices: D.prices, evidence: D.evidence, choices });
+}
+function currentBoard() { return board(D.evidence, policy, D.evidence.finished); }
+
+function renderSummary() {
+  const p = currentPlan(), b = currentBoard(), box = $('summaryCards');
+  if (!p.ok) { box.innerHTML = '<div class="card">' + esc(p.why) + '</div>'; return; }
+  const loc = obligations(D.company.workloads[0], 'local', D.law.duties, { asOf: D.law.checked, providerAbroad: choices.providerAbroad });
+  box.innerHTML = [
+    ['5-year cost, local-first', gbp(p.tco.total.local), 'cash, net of VAT'],
+    ['5-year cost, corporate', gbp(p.tco.total.cloud), p.seats.toLocaleString('en-GB') + ' seats of ' + p.seatProduct + ' plus cloud APIs'],
+    ['Difference over 5 years', gbp(Math.abs(p.tco.total.difference)), (p.tco.total.difference >= 0 ? 'lower on the local-first side' : 'lower on the corporate side') + (p.tco.breakEvenYear ? ' · ahead from year ' + p.tco.breakEvenYear : '')],
+    ['Go / no-go board', b.tally.PASS + ' pass · ' + b.tally.BLOCK + ' block · ' + b.tally.PENDING + ' pending', 'sealed from fallfloor\'s receipted evidence'],
+  ].map(([k, v, s]) => '<div class="card"><div class="k">' + esc(k) + '</div><div class="big">' + esc(v) + '</div><p class="sub" style="margin:0;font-size:.85rem">' + esc(s) + '</p></div>').join('');
+  const removed = loc.items.filter((i) => i.status === 'removed').map((i) => i.title.charAt(0).toLowerCase() + i.title.slice(1));
+  const staffLocal = p.tco.lines.find((l) => l.id === 'local-staff').total, staffCloud = p.tco.lines.find((l) => l.id === 'cloud-staff').total, seats = p.tco.lines.find((l) => l.id === 'cloud-seats').total;
+  $('summaryPoints').innerHTML = [
+    'Local-first removes, for inference: ' + removed.join('; ') + '. Prompts and answers never leave the company\'s machines.',
+    'It does not remove the company\'s own duties: a lawful basis, transparency, individuals\' rights, a DPIA, accuracy, security — and, because it builds its own AI systems, the AI Act provider duties that apply to them (Article 50 today; high-risk duties only for high-risk uses, from 2 December 2027).',
+    'The corporate side pays ' + gbp(seats) + ' in seat licences over five years that local-first does not; local-first spends more on the people who run it (' + gbp(staffLocal) + ' against ' + gbp(staffCloud) + '). People are the largest line on both sides, and both team sizes are assumptions, shown as such.',
+    (() => { const be = currentBreakEven(); return be.ok && be.share !== null && !be.localAlwaysCheaper && !be.cloudAlwaysCheaper ? 'What has to be true: at these inputs, local-first costs less once more than ' + pct(be.share) + ' of knowledge workers would otherwise get a ' + p.seatProduct + ' seat; below that, the corporate model costs less.' : 'Seat coverage does not change which side costs less at these inputs.'; })(),
+    'Customer-facing work stays assisted: unsupervised replies and automatic quarantine are BLOCKED on the measured evidence; HR routing and asynchronous work on the floor PASS; what is unmeasured stays PENDING until Phase 1 measures it.',
+  ].map((s) => '<li>' + esc(s) + '</li>').join('');
+}
+function renderCase() {
+  $('caseTable').querySelector('tbody').innerHTML = D.design.case.map((r) => '<tr><td><b>' + esc(r.aspect) + '</b></td><td>' + esc(r.local) + '</td><td>' + esc(r.corporate) + '</td></tr>').join('');
+}
+function renderArch() {
+  const L = D.design.architecture;
+  const box = (x, y, w, h, t, s, dash) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="10" fill="var(--panel2)" stroke="' + (s || 'var(--line)') + '" stroke-width="1.5"' + (dash ? ' stroke-dasharray="6 5"' : '') + '/>' + (t ? '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">' + esc(t) + '</text>' : '');
+  let s = '<rect x="10" y="10" width="770" height="340" rx="16" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="8 6"/><text x="24" y="32" font-size="12" font-weight="700" fill="var(--accent)">THE COMPANY\'S NETWORK — personal data stays inside</text>';
+  s += box(30, 50, 220, 70, 'The floor (laptops, WebGPU)', 'var(--accent2)') + box(290, 50, 220, 70, 'The mesh and the desk', 'var(--accent2)') + box(550, 50, 210, 70, 'The core (inference nodes)', 'var(--accent2)');
+  s += box(30, 150, 170, 56, 'Receipts ledger') + box(215, 150, 170, 56, 'Gates') + box(400, 150, 170, 56, 'Knowledge index') + box(585, 150, 175, 56, 'Identity and control');
+  s += box(30, 236, 350, 56, 'Integrations: ticketing, email, HR') + box(400, 236, 360, 56, 'People in the loop: agents, analysts, HR');
+  s += '<line x1="250" y1="85" x2="290" y2="85" stroke="var(--accent2)" stroke-width="2"/><line x1="510" y1="85" x2="550" y2="85" stroke="var(--accent2)" stroke-width="2"/>';
+  s += box(800, 130, 90, 90, '', 'var(--warn)', true) + '<text x="845" y="165" text-anchor="middle" font-size="11" font-weight="700" fill="var(--warn)">ONE DOOR</text><text x="845" y="182" text-anchor="middle" font-size="10" fill="var(--muted)">model weights</text><text x="845" y="196" text-anchor="middle" font-size="10" fill="var(--muted)">only</text>';
+  s += '<line x1="760" y1="175" x2="800" y2="175" stroke="var(--warn)" stroke-width="2" stroke-dasharray="4 4"/>';
+  s += '<text x="30" y="325" font-size="11" fill="var(--muted)">Every step: signed by the node that did it, hash-linked to the step before, checked by the next.</text>';
+  $('archG').innerHTML = s;
+  $('archCards').innerHTML = L.map((l) => '<div class="card"><div class="k">' + esc(l.layer) + '</div><p>' + esc(l.what) + '</p><p class="note" style="margin:.4rem 0 0">' + esc(l.evidence) + '</p></div>').join('');
+}
+function renderCapacity() {
+  const p = currentPlan(); if (!p.ok) return;
+  const W = Object.fromEntries(D.company.workloads.map((w) => [w.id, w]));
+  $('capWorkloads').querySelector('tbody').innerHTML = p.capacity.perWorkload.map((w) => '<tr><td>' + esc(W[w.id].name) + '</td><td>' + esc(w.tier) + '</td><td class="n">' + w.perMonth.toLocaleString('en-GB') + '</td><td class="n">' + w.secondsPerItem + ' s</td><td>' + (w.tier === 'laptop' ? chip('measured', 'measured · fallfloor') : chip('assumption', 'planning figure')) + '</td></tr>').join('');
+  $('capYears').querySelector('tbody').innerHTML = p.capacity.perYear.map((y) => '<tr><td class="n">' + y.year + '</td><td class="n">' + Math.round(y.laptopHours).toLocaleString('en-GB') + '</td><td class="n">' + (y.laptopUtil === null ? '—' : pct(y.laptopUtil)) + (y.floorOverloaded ? ' ' + chip('BLOCK', 'over capacity') : '') + '</td><td class="n">' + Math.round(y.coreHours).toLocaleString('en-GB') + '</td><td class="n">' + y.coreNodes + '</td></tr>').join('');
+  $('capNote').textContent = 'Core node: ' + D.prices.coreNode.product + ' — ' + D.prices.coreNode.bandwidthGBs + ' GB/s memory bandwidth, ' + D.company.core.model.name + ' at about ' + D.company.core.model.weightsGB + ' GB, so about ' + p.capacity.decodeTokPerSec + ' tokens/s at ' + pct(tweaks.efficiency) + ' of the ceiling. The enrolled floor offers ' + Math.round(p.capacity.laptopHoursAvailable).toLocaleString('en-GB') + ' laptop-hours a month.';
+}
+function renderCost() {
+  const p = currentPlan(), warn = $('costWarn');
+  if (!p.ok) { warn.textContent = p.why; return; }
+  const T = p.tco;
+  const be = currentBreakEven();
+  $('costCards').innerHTML = [['Local-first, 5 years', gbp(T.total.local)], ['Corporate, 5 years', gbp(T.total.cloud)], [T.total.difference >= 0 ? 'Local-first costs less by' : 'Corporate costs less by', gbp(Math.abs(T.total.difference))], ['Local-first is cheaper above', be.ok && be.share !== null ? (be.localAlwaysCheaper ? 'any seat coverage' : be.cloudAlwaysCheaper ? 'never, at these inputs' : pct(be.share) + ' seat coverage') : '—']].map(([k, v]) => '<div class="card"><div class="k">' + esc(k) + '</div><div class="big">' + esc(v) + '</div></div>').join('');
+  $('costYears').querySelector('tbody').innerHTML = T.perYear.map((y, i) => '<tr><td class="n">' + y.year + '</td><td class="n">' + gbp(y.local) + '</td><td class="n">' + gbp(y.cloud) + '</td><td class="n">' + gbp(T.cumulative[i].local) + '</td><td class="n">' + gbp(T.cumulative[i].cloud) + '</td></tr>').join('');
+  const colors = { 'list-price': 'var(--good)', measured: 'var(--accent2)', estimate: 'var(--warn)', assumption: 'var(--bad)' };
+  const bar = (side) => '<div class="bar" role="img" aria-label="' + side + ' total by basis">' + Object.entries(T.basisShare[side]).map(([b, v]) => '<span style="width:' + v * 100 + '%;background:' + colors[b] + '" title="' + b + ' ' + pct(v) + '"></span>').join('') + '</div>';
+  $('costBasis').innerHTML = '<p class="k">What each total rests on</p>' + ['local', 'cloud'].map((side) => '<p style="margin:.4rem 0 .2rem">' + (side === 'local' ? 'Local-first' : 'Corporate') + ': ' + Object.entries(T.basisShare[side]).filter(([, v]) => v > 0).map(([b, v]) => chip(b, b + ' ' + pct(v))).join(' ') + '</p>' + bar(side)).join('');
+  $('costLines').querySelector('tbody').innerHTML = T.lines.map((l) => '<tr><td>' + esc(l.side === 'local' ? 'local-first' : 'corporate') + '</td><td>' + esc(l.label) + '</td><td class="n">' + gbp(l.total) + '</td><td>' + chip(l.basis) + '</td><td>' + (LINE_SRC[l.id] || '') + '</td></tr>').join('');
+  warn.textContent = (p.warnings.length ? p.warnings.join(' ') + ' ' : '') + 'The corporate side prices the same work, not the same quality: frontier models would very likely answer more of it correctly.';
+}
+let LINE_SRC = {};
+function buildLineSources() {
+  const P = D.prices, s = P.seats.find((x) => x.id === choices.seat), a = P.api.find((x) => x.id === choices.apiModel);
+  LINE_SRC = { 'cloud-seats': link(s.source, 'list price') + ' · ' + esc(s.checked), 'local-core-nodes': link(P.coreNode.source, 'list price') + ' · ' + link(P.coreNode.specSource, 'spec'), 'local-core-power': link(P.coreNode.specSource, 'power spec') + ' · ' + link(P.electricity.source, 'DESNZ'), 'local-floor-power': link(P.laptopPower.source, 'Intel') + ' · ' + link(P.electricity.source, 'DESNZ'), 'local-staff': link(P.salaries.source, 'ONS ASHE'), 'cloud-staff': link(P.salaries.source, 'ONS ASHE'), 'local-models': link('https://huggingface.co/Qwen/Qwen2.5-32B-Instruct', 'licence'), 'local-laptops': 'already owned', 'local-compliance': 'assumption', 'cloud-compliance': 'assumption' };
+  for (const w of D.company.workloads) LINE_SRC['cloud-api-' + w.id] = link(a.source, 'list price') + (w.tokens === 'measured' ? ' · tokens ' + link(D.evidence.from.page, 'measured') : ' · tokens estimated');
+}
+function renderCostInputs() {
+  $('inSeat').innerHTML = D.prices.seats.map((s) => '<option value="' + esc(s.id) + '"' + (s.id === choices.seat ? ' selected' : '') + '>' + esc(s.product) + '</option>').join('');
+  $('inApi').innerHTML = D.prices.api.map((a) => '<option value="' + esc(a.id) + '"' + (a.id === choices.apiModel ? ' selected' : '') + '>' + esc(a.provider + ' ' + a.model) + '</option>').join('');
+  $('inSeatShare').value = choices.seatShare; $('inGrowth').value = tweaks.growth; $('inEff').value = tweaks.efficiency; $('inOnCost').value = tweaks.onCost;
+  const num = (id, lo, hi, fallback) => { const v = Number($(id).value); return Number.isFinite(v) && v >= lo && v <= hi ? v : fallback; };
+  const redraw = () => { choices = { ...choices, seat: $('inSeat').value, apiModel: $('inApi').value, seatShare: num('inSeatShare', 0, 1, choices.seatShare) }; tweaks = { growth: num('inGrowth', -0.5, 5, tweaks.growth), efficiency: num('inEff', 0.05, 1, tweaks.efficiency), onCost: num('inOnCost', 1, 3, tweaks.onCost) }; buildLineSources(); renderCost(); renderCapacity(); renderSummary(); };
+  for (const id of ['inSeat', 'inApi', 'inSeatShare', 'inGrowth', 'inEff', 'inOnCost']) $(id).addEventListener('input', redraw);
+}
+function renderCompliance() {
+  const sel = $('inWorkload');
+  sel.innerHTML = D.company.workloads.map((w, i) => '<option value="' + i + '">' + esc(w.name) + '</option>').join('') + D.company.outOfScope.map((w) => '<option value="x-' + esc(w.id) + '">' + esc(w.name) + ' (not in this rollout)</option>').join('');
+  const draw = () => {
+    const v = sel.value, w = v.startsWith('x-') ? { flags: { personalData: true, significantDecision: true, highRisk: true, creditScoring: true, euOutput: true } } : D.company.workloads[Number(v)];
+    const ctx = { asOf: D.law.checked, providerAbroad: choices.providerAbroad };
+    const o = Object.fromEntries(['local', 'cloud', 'saas'].map((d) => [d, obligations(w, d, D.law.duties, ctx)]));
+    $('roleLocal').textContent = 'Role, local-first: ' + o.local.role;
+    const rows = o.local.items.map((it) => {
+      const d = D.law.duties.find((x) => x.id === it.id), cell = (dep) => { const x = o[dep].items.find((y) => y.id === it.id); return x ? chip(x.status) + '<br><span class="sub" style="font-size:.8rem">' + esc(x.note) + '</span>' : '—'; };
+      return '<tr><td><b>' + esc(it.title) + '</b><br><span class="mono">' + esc(d.regime + ' · ' + d.ref) + '</span><details><summary class="sub" style="font-size:.8rem">the text</summary><p class="sub" style="font-size:.82rem">“' + esc(d.quote) + '” — ' + link(d.url, 'source') + ', checked ' + esc(d.checked) + '</p></details></td><td>' + cell('local') + '</td><td>' + cell('cloud') + '</td><td>' + cell('saas') + '</td><td class="n">' + (it.inForce ? chip('removed', 'in force') : chip('yours', 'from ' + it.from)) + '</td></tr>';
+    });
+    $('dutyTable').querySelector('tbody').innerHTML = rows.join('');
+  };
+  sel.addEventListener('input', draw); draw();
+  const loc = obligations(D.company.workloads[0], 'local', D.law.duties, { asOf: D.law.checked, providerAbroad: true });
+  const list = (f) => loc.items.filter(f).map((i) => '<li>' + esc(i.title) + ' <span class="mono" style="font-size:.78rem">' + esc(D.law.duties.find((d) => d.id === i.id).ref) + '</span></li>').join('');
+  $('solveCards').innerHTML = '<div class="card"><div class="k">Local-first removes or eases</div><ul>' + list((i) => i.status === 'removed' || i.status === 'eased') + '</ul></div><div class="card"><div class="k">Stays with the company, on any stack</div><ul>' + list((i) => i.status === 'unchanged' || i.status === 'yours') + '</ul></div>';
+  $('dateTable').querySelector('tbody').innerHTML = D.law.dates.map((d) => '<tr><td class="n">' + esc(d.date) + '</td><td>' + esc(d.what) + '</td><td>' + link(d.url, d.ref) + '</td></tr>').join('');
+}
+function renderOwn() {
+  const p = currentPlan(), E = D.evidence;
+  const items = [
+    ['The data', 'Prompts, answers, documents and the knowledge index stay on the company\'s machines. No AI processor, no transfer, no vendor retention setting to trust for inference.'],
+    ['The evidence', 'Every step signed by the node that did it and hash-linked to the one before. In fallfloor that was ' + E.from.hops + ' hops, every signature re-verified in CI — the company holds the record, not a vendor dashboard.'],
+    ['The models', 'Open weights under Apache 2.0, fetched once into a hash-pinned mirror. Nobody changes the model the company tested; upgrades go through the same pre-registered test.'],
+    ['The compute', p.ok ? p.capacity.perYear[0].coreNodes + ' core nodes in year 1 and the laptops already on desks — owned capacity, bought in steps as measured demand grows.' : ''],
+    ['The power bill', p.ok ? 'Electricity for the AI work is costed at published maximum power and the DESNZ non-domestic rate: ' + gbp(p.tco.lines.find((l) => l.id === 'local-core-power').total + p.tco.lines.find((l) => l.id === 'local-floor-power').total) + ' over five years, an upper bound.' : ''],
+    ['The exit', 'Nothing to migrate away from: the data, the models, the prompts and the receipts are already the company\'s.'],
+  ];
+  $('ownCards').innerHTML = items.map(([k, v]) => '<div class="card"><div class="k">' + esc(k) + '</div><p>' + esc(v) + '</p></div>').join('');
+}
+const DECISION_LABEL = { 'support-unsupervised': 'Send customer replies without a person', 'support-assisted': 'Draft customer replies for an agent to approve', 'screening-auto': 'Quarantine suspected spam automatically', 'screening-review': 'Flag suspected spam for a person to review', 'hr-routing': 'Route staff HR questions to the right topic', 'floor-async': 'Run asynchronous AI work on the laptop floor', 'credit-decisions': 'Make credit decisions with AI' };
+let lastBoard = null;
+function renderBoard() {
+  const b = currentBoard(); lastBoard = b;
+  if (!b.ok) { $('boardTable').querySelector('tbody').innerHTML = '<tr><td colspan="4">' + esc(b.why) + '</td></tr>'; return; }
+  $('boardTable').querySelector('tbody').innerHTML = b.rows.map((r) => '<tr><td><b>' + esc(DECISION_LABEL[r.id]) + '</b><br><span class="mono" style="font-size:.75rem">receipt ' + esc(r.receipt.receiptHash.slice(0, 16)) + '…</span></td><td>' + chip(r.verdict) + '</td><td class="n">' + r.positive + ' / ' + r.negative + '</td><td>' + (r.reasons.length ? esc(r.reasons.join('; ')) : 'every gate clear') + '</td></tr>').join('');
+  $('verifyOut').textContent = '';
+  const tally = $('heroPills').querySelector('.boardPill');
+  if (tally) tally.innerHTML = 'Go / no-go: <b>' + b.tally.PASS + ' pass · ' + b.tally.BLOCK + ' block · ' + b.tally.PENDING + ' pending</b>';
+}
+function renderPolicy() {
+  const fields = [['maxSilentErrorRate', 'Max silent-error rate (unsupervised)'], ['maxAutoFalseFlagRate', 'Max false-flag rate (automatic)'], ['maxReviewFalseFlagRate', 'Max false-flag rate (review)'], ['minPositiveSamples', 'Min spam samples'], ['routingMaxErrorRate', 'Max routing error'], ['asyncP95Sec', 'Async p95 bar (s)']];
+  $('policyInputs').innerHTML = fields.map(([k, t]) => '<label class="f">' + esc(t) + '<input type="number" step="any" min="0" data-k="' + k + '" value="' + policy[k] + '" /></label>').join('');
+  $('policyInputs').querySelectorAll('input').forEach((i) => i.addEventListener('input', () => { const v = Number(i.value); if (Number.isFinite(v) && v > 0) { policy = { ...policy, [i.dataset.k]: v }; renderBoard(); renderSummary(); } }));
+}
+function renderTeam() {
+  const S = D.company.staff, sal = D.prices.salaries.roles;
+  const card = (side, title) => '<div class="card"><div class="k">' + esc(title) + '</div><table><tbody>' + S[side].map((r) => '<tr><td>' + esc(r.role) + '</td><td class="n">' + r.fte + ' FTE</td><td class="n">' + gbp(sal[r.soc].median) + '</td></tr>').join('') + '</tbody></table><p class="note">Salary: ONS ASHE 2025 median for occupation ' + esc(S[side].map((r) => r.soc).filter((v, i, a) => a.indexOf(v) === i).join(', ')) + ' (' + link(D.prices.salaries.source, 'ONS') + '), × ' + tweaks.onCost + ' on-cost. Team sizes are assumptions.</p></div>';
+  $('teamCards').innerHTML = card('local', 'Local-first team') + card('cloud', 'Corporate-model team');
+  $('operatingList').innerHTML = D.design.operating.map((s) => '<li>' + esc(s) + '</li>').join('');
+}
+function renderRollout() { $('rolloutCards').innerHTML = D.design.rollout.map((r) => '<div class="card"><div class="k">' + esc(r.months) + '</div><h3>' + esc(r.phase) + '</h3><p>' + esc(r.do) + '</p><p class="note"><b>Gate:</b> ' + esc(r.gate) + '</p></div>').join(''); }
+function renderRisks() { $('riskTable').querySelector('tbody').innerHTML = D.risks.map((r) => '<tr><td>' + esc(r.risk) + '</td><td>' + chip(r.likelihood === 'high' ? 'BLOCK' : r.likelihood === 'medium' ? 'PENDING' : 'PASS', r.likelihood) + '</td><td>' + chip(r.impact === 'high' ? 'BLOCK' : r.impact === 'medium' ? 'PENDING' : 'PASS', r.impact) + '</td><td>' + esc(r.mitigation) + '</td><td>' + esc(r.owner) + '</td></tr>').join(''); }
+function renderEvidence() {
+  const E = D.evidence;
+  const rows = [
+    ['Machine', E.machine], ['Receipts', E.from.hops + ' signed, hash-linked hops; ledger sha256 ' + E.from.ledgerHash.slice(0, 16) + '…'],
+    ['Pre-registered rules', E.preregistered.rulesPassed + ' of ' + E.preregistered.rulesOf + ' passed (failed: ' + E.preregistered.failed.join(', ') + ')'],
+    ['Support (100 items)', pct(E.support.e2e) + ' correct end to end; ' + pct(E.support.silent) + ' wrong but passing the gate; 0 lost in either kill test; p95 ' + E.support.p95Sec + ' s'],
+    ['Security (100 items)', pct(E.security.accuracy) + ' correct; caught ' + E.security.caught + ' of ' + (E.security.caught + E.security.missed) + ' spam; wrongly flagged ' + E.security.wronglyFlagged + ' of ' + (E.security.wronglyFlagged + E.security.correctlyPassed) + ' (answering "legit" every time: ' + pct(E.security.majorityAccuracy) + ')'],
+    ['HR routing (100 items)', pct(E.hr.accuracy) + ' correct'], ['Cold start', 'worst node ' + E.coldStartSecMax + ' s, model download included'],
+  ];
+  $('evidenceBody').innerHTML = '<table><tbody>' + rows.map(([k, v]) => '<tr><td><b>' + esc(k) + '</b></td><td>' + esc(v) + '</td></tr>').join('') + '</tbody></table><p class="note">From ' + link(E.from.repo + '/commit/' + E.from.commit, 'fallfloor@' + E.from.commit.slice(0, 7)) + ' (' + link(E.from.page, 'live page') + ', ' + link(E.from.ci, 'CI') + '). ' + esc(E.from.how) + ' This repository\'s CI re-derives every number here from that commit.</p>';
+}
+function renderLimits() { $('limitsList').innerHTML = D.design.limits.map((s) => '<li>' + esc(s) + '</li>').join(''); }
+
+$('btnVerify').addEventListener('click', () => {
+  if (!lastBoard || !lastBoard.ok) return;
+  const r = lastBoard.rows.map((x) => verifyReceipt(x.receipt));
+  const good = r.filter((x) => x.ok && x.valid).length;
+  $('verifyOut').innerHTML = (good === r.length ? '<span class="ok">✓ ' : '<span class="no">✗ ') + good + ' of ' + r.length + ' receipts intact — every verdict agrees with its sealed hash</span>';
+});
+$('btnForge').addEventListener('click', () => {
+  if (!lastBoard || !lastBoard.ok) return;
+  const row = lastBoard.rows.find((x) => x.verdict === 'BLOCK') || lastBoard.rows[0];
+  const forged = { ...row.receipt, verdict: 'PASS', negativeScore: 0 };
+  const v = verifyReceipt(forged);
+  $('verifyOut').innerHTML = '<span class="' + (v.valid ? 'no">✗ accepted?! ' : 'ok">✓ forgery rejected — ') + esc(DECISION_LABEL[row.id] + ': flipped to PASS → ' + v.why) + '</span>';
+});
+$('heroPills').insertAdjacentHTML('beforeend', '<span class="pill boardPill"></span>');
+buildLineSources(); renderCostInputs(); renderSummary(); renderCase(); renderArch(); renderCapacity(); renderCost(); renderCompliance(); renderOwn(); renderPolicy(); renderBoard(); renderTeam(); renderRollout(); renderRisks(); renderEvidence(); renderLimits();
+</script>
+</body>
+</html>

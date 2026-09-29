@@ -1,0 +1,22 @@
+[
+  {
+    "mutation": "< → <=",
+    "snippet": "const clamp01 = (v) => (isNum(v) ? (v < 0 ? 0 : v > 1 ? 1 : v) : 0);",
+    "reason": "Value-equivalent boundary on a standard clamp. The two variants differ only at v===0: `v<0` is false so the else path returns v (which is 0), and `v<=0` is true so it returns 0 — identical. For every other input the branch taken is unchanged, so clamp01's output is byte-identical for all inputs; no test can separate them because no observable differs."
+  },
+  {
+    "mutation": "> → >=",
+    "snippet": "const clamp01 = (v) => (isNum(v) ? (v < 0 ? 0 : v > 1 ? 1 : v) : 0);",
+    "reason": "Value-equivalent boundary on a standard clamp. The two variants differ only at v===1: `v>1` is false so the else returns v (which is 1), and `v>=1` is true so it returns 1 — identical. Every other input takes the same branch, so clamp01 returns the same value for all inputs; genuinely equivalent, not test-theatre."
+  },
+  {
+    "mutation": "> → >=",
+    "snippet": "const p = isNum(it.weight) && it.weight > 0 ? it.weight : 0;",
+    "reason": "Shadowed by the very next guard. A weight of exactly 0 sets p=0 under both `>0` (false → the ternary yields 0) and `>=0` (true → yields it.weight which is 0), and the following line `if (p <= 0) continue` then drops that item either way. Negative and positive weights are unaffected by the change. No input to escortPositive can produce a different result, so the mutation is genuinely equivalent."
+  },
+  {
+    "mutation": "< → <=",
+    "snippet": "for (let t = 16; t < 64; t++) {",
+    "reason": "Equivalent SHA-256 loop bound (hash.mjs, vendored verbatim from the estate's proven cascade.mjs). `t<=64` runs one extra iteration at t=64 whose only write is w[64] — an out-of-bounds index on the 64-element Uint32Array w, which is a silent no-op in JS. w[64] is never read (the compression loop reads only w[0..63]), so the produced digest is byte-identical for every input; the sha256('abc') known-vector test still passes under the mutant, confirming equivalence."
+  }
+]

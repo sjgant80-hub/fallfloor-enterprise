@@ -1,0 +1,76 @@
+{
+ "_rule": "A MODELLED company, not a client. Every number in this file is an assumption, labelled as one, and every one can be changed on the page. Measured figures come from evidence/fallfloor.json; prices from sources/prices.json.",
+ "name": "A modelled UK digital bank with EU customers",
+ "profile": {
+  "employees": 1200, "knowledgeWorkers": 1000, "laptops": 1000, "customers": "about 1.2 million",
+  "footprint": "Head office in the UK; customers in the UK and the EU — so UK GDPR, EU GDPR (Art 3(2)) and, where AI output is used in the EU, the EU AI Act (Art 2(1)(c)) all apply.",
+  "basis": "assumption"
+ },
+ "years": 5,
+ "growth": { "value": 0.15, "basis": "assumption", "why": "Volume growth per year for the automated workloads; seats are held flat." },
+ "floor": {
+  "nodeShare": { "value": 0.25, "basis": "assumption", "why": "A quarter of laptops enrolled as AI nodes — on mains power, managed by device policy." },
+  "hoursPerDay": { "value": 6, "basis": "assumption", "why": "Node hours per working day while the laptop is on and plugged in." },
+  "daysPerMonth": { "value": 21, "basis": "assumption", "why": "Working days per month." }
+ },
+ "core": {
+  "model": { "name": "Qwen2.5-32B-Instruct (Apache 2.0), 4-bit", "weightsGB": 18, "basis": "estimate", "why": "32.8B parameters (Hugging Face model card) at 4-bit plus overhead ≈ 18 GB.", "source": "https://huggingface.co/Qwen/Qwen2.5-32B-Instruct" },
+  "efficiency": { "value": 0.35, "basis": "assumption", "why": "Share of the memory-bandwidth ceiling reached when generating (decode is bandwidth-bound: tokens/s ≤ bandwidth ÷ weight size). The laptop in the fallfloor run reached less; Phase 1 measures the real figure on the chosen node before more are bought." },
+  "prefillTokPerSec": { "value": 300, "basis": "assumption", "why": "Planning figure for reading the prompt on the core node; Phase 1 measures it." },
+  "hoursPerMonth": { "value": 500, "basis": "assumption", "why": "Core nodes serve office hours plus overnight batch work (about 16 h a day)." },
+  "targetUtil": { "value": 0.6, "basis": "assumption", "why": "Headroom for peaks; queued work absorbs the rest." },
+  "spare": { "value": 1, "basis": "assumption", "why": "One spare node (N+1)." },
+  "lifeYears": { "value": 4, "basis": "assumption", "why": "Replace core nodes every four years." }
+ },
+ "workloads": [
+  { "id": "support-triage", "name": "Customer support: route, topic and a first draft for the agent", "tier": "laptop", "perMonth": 150000, "tokens": "measured", "evidence": "support", "cloud": "api",
+    "flags": { "personalData": true, "interactsWithPublic": false, "significantDecision": false, "highRisk": false, "euOutput": true }, "mode": "assisted",
+    "why": "Measured in fallfloor: route → topic → draft on the laptop floor." },
+  { "id": "inbound-screening", "name": "Inbound message screening: flag suspected spam and scams for review", "tier": "laptop", "perMonth": 400000, "tokens": "measured", "evidence": "security", "cloud": "api",
+    "flags": { "personalData": true, "interactsWithPublic": false, "significantDecision": false, "highRisk": false, "euOutput": true }, "mode": "assisted",
+    "why": "Measured in fallfloor (SMS screening)." },
+  { "id": "hr-routing", "name": "Staff HR helpdesk: route each question to the right HR topic", "tier": "laptop", "perMonth": 8000, "tokens": "measured", "evidence": "hr", "cloud": "api",
+    "flags": { "personalData": true, "interactsWithPublic": false, "significantDecision": false, "highRisk": false, "euOutput": true }, "mode": "automated",
+    "why": "Measured in fallfloor (CLINC150 work topics). Routing a question is a narrow procedural task, not an employment decision (AI Act Art 6(3)(a))." },
+  { "id": "support-replies", "name": "Customer replies at production quality, drafted on the core tier for agent approval", "tier": "core", "perMonth": 150000, "tokens": "estimate", "tokensIn": 1400, "tokensOut": 150, "cloud": "api",
+    "flags": { "personalData": true, "interactsWithPublic": false, "significantDecision": false, "highRisk": false, "euOutput": true }, "mode": "assisted",
+    "why": "Tokens: the measured fallfloor support prompt (831 in / 73 out) plus the retrieved help-article text and a longer reply — an estimate." },
+  { "id": "knowledge-assistant", "name": "Internal knowledge assistant for staff (answers from the bank's own documents)", "tier": "core", "perMonth": 210000, "tokens": "estimate", "tokensIn": 2500, "tokensOut": 300, "cloud": "seats",
+    "flags": { "personalData": true, "interactsWithPublic": false, "significantDecision": false, "highRisk": false, "euOutput": true }, "mode": "assisted",
+    "why": "1,000 knowledge workers × 10 questions a working day × 21 days. On the corporate side this is what the seats buy. Tokens are an estimate (retrieved passages in, a short answer out)." },
+  { "id": "kyc-extraction", "name": "KYC document field extraction, checked by an analyst", "tier": "core", "perMonth": 30000, "tokens": "estimate", "tokensIn": 1500, "tokensOut": 150, "cloud": "api",
+    "flags": { "personalData": true, "interactsWithPublic": false, "significantDecision": false, "highRisk": false, "euOutput": true }, "mode": "assisted",
+    "why": "Reading identity and address documents into structured fields. Not biometric identification; an analyst confirms every record. Tokens are an estimate." }
+ ],
+ "outOfScope": [
+  { "id": "credit-decisions", "name": "Credit decisions", "why": "High-risk under AI Act Annex III 5(b) from 2 December 2027, a fundamental rights impact assessment (Art 27) and GDPR Art 22 / UK Arts 22A–22D. Not in this rollout; the gate shows why." }
+ ],
+ "staff": {
+  "onCost": { "value": 1.3, "basis": "estimate", "why": "Employer's National Insurance, pension and overheads on top of salary — an estimate; change it." },
+  "local": [
+   { "role": "AI platform lead", "soc": "2133", "fte": 1 },
+   { "role": "Inference and ML engineers", "soc": "2134", "fte": 2 },
+   { "role": "Infrastructure / SRE for the core nodes and the floor", "soc": "2132", "fte": 1 },
+   { "role": "Security (model supply chain, device policy)", "soc": "2135", "fte": 0.5 },
+   { "role": "Data protection and AI governance (with the DPO)", "soc": "2133", "fte": 0.5 }
+  ],
+  "cloud": [
+   { "role": "AI platform and integration engineers", "soc": "2134", "fte": 2 },
+   { "role": "Vendor management and procurement", "soc": "2132", "fte": 0.5 },
+   { "role": "Data protection and AI governance (with the DPO)", "soc": "2133", "fte": 0.5 }
+  ],
+  "basis": "assumption", "why": "Team sizes are this design's assumptions. Salaries are ONS medians (sources/prices.json)."
+ },
+ "compliance": {
+  "dayRate": { "value": 800, "basis": "assumption", "why": "Blended cost of a day of legal / privacy specialist time — an assumption; change it." },
+  "local": { "daysYear1": 40, "daysPerYear": 15, "why": "DPIAs per workload, AI system register, AI literacy plan, Article 50 notices, supply-chain and device security reviews." },
+  "cloud": { "daysYear1": 50, "daysPerYear": 25, "why": "The same, plus processor due diligence and contracts for each AI vendor, transfer risk assessments, and yearly vendor reviews." },
+  "basis": "assumption"
+ },
+ "policy": {
+  "_what": "The go/no-go thresholds this design proposes to the CTO. They are choices, not facts, and the page lets you change them.",
+  "maxSilentErrorRate": 0.02, "maxAutoFalseFlagRate": 0.02, "maxReviewFalseFlagRate": 0.3, "minPositiveSamples": 30, "minItems": 100,
+  "routingMaxErrorRate": 0.3, "asyncP95Sec": 300, "ownerAssigned": true, "unmeasuredAgentCatch": 0.7
+ },
+ "choices": { "seat": "m365-copilot", "seatShare": 1, "apiModel": "gpt-5-mini", "providerAbroad": true }
+}

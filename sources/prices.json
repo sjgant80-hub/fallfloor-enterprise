@@ -1,0 +1,40 @@
+{
+ "_rule": "Every figure is a public list price with its source and the date it was checked, a published specification, or an official statistic. VAT treatment is recorded as the page states it; the model compares everything net of UK VAT (a VAT-registered company reclaims it).",
+ "checked": "2026-09-29",
+ "vatRate": { "value": 0.2, "why": "UK standard rate of VAT", "source": "https://www.gov.uk/vat-rates", "checked": "2026-09-29" },
+ "fx": { "gbpPerUsd": 0.75396, "how": "ECB euro reference rates for 2026-09-28: USD 1.1378 and GBP 0.85785 per euro, so GBP per USD = 0.85785 / 1.1378", "source": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml", "checked": "2026-09-29" },
+ "seats": [
+  { "id": "m365-copilot", "product": "Microsoft 365 Copilot (enterprise)", "price": 23.10, "currency": "GBP", "per": "user / month, paid yearly, annual commitment", "vat": "excluded", "quote": "£23.10 user/month, paid yearly … Price does not include VAT.", "addOn": "Added to an existing Microsoft 365 licence, which both sides of this comparison keep.", "maxSeats": null, "source": "https://www.microsoft.com/en-gb/microsoft-365-copilot/enterprise", "checked": "2026-09-29" },
+  { "id": "chatgpt-business", "product": "ChatGPT Business (standard seat)", "price": 15, "currency": "GBP", "per": "seat / month, billed annually", "vat": "not stated", "quote": "Standard seat £15 / month … £15/month if billed annually.", "addOn": null, "maxSeats": null, "source": "https://chatgpt.com/pricing/", "checked": "2026-09-29" },
+  { "id": "claude-enterprise", "product": "Claude Enterprise", "price": 20, "currency": "USD", "per": "seat / month, billed annually, plus usage at API rates", "vat": "not stated", "quote": "Seat price + usage at API rates US$20/seat/month, billed annually.", "addOn": null, "plusUsage": true, "maxSeats": null, "source": "https://claude.com/pricing", "checked": "2026-09-29" },
+  { "id": "claude-team", "product": "Claude Team (standard seat)", "price": 18, "currency": "GBP", "per": "seat / month, billed annually", "vat": "included", "quote": "For teams of 2 to 150 … £18 Per seat / month if billed annually … Prices include 20% VAT", "addOn": null, "maxSeats": 150, "source": "https://claude.com/pricing", "checked": "2026-09-29" }
+ ],
+ "api": [
+  { "id": "gpt-5-nano", "provider": "OpenAI", "model": "gpt-5-nano", "inPerM": 0.05, "outPerM": 0.40, "currency": "USD", "source": "https://developers.openai.com/api/docs/pricing", "checked": "2026-09-29" },
+  { "id": "gpt-5-mini", "provider": "OpenAI", "model": "gpt-5-mini", "inPerM": 0.25, "outPerM": 2.00, "currency": "USD", "source": "https://developers.openai.com/api/docs/pricing", "checked": "2026-09-29" },
+  { "id": "gemini-3.1-flash-lite", "provider": "Google", "model": "Gemini 3.1 Flash-Lite", "inPerM": 0.25, "outPerM": 1.50, "currency": "USD", "source": "https://ai.google.dev/gemini-api/docs/pricing", "checked": "2026-09-29" },
+  { "id": "claude-haiku-4.5", "provider": "Anthropic", "model": "Claude Haiku 4.5", "inPerM": 1.00, "outPerM": 5.00, "currency": "USD", "source": "https://platform.claude.com/docs/en/about-claude/pricing", "checked": "2026-09-29" },
+  { "id": "claude-sonnet-5", "provider": "Anthropic", "model": "Claude Sonnet 5", "inPerM": 2.00, "outPerM": 10.00, "currency": "USD", "source": "https://platform.claude.com/docs/en/about-claude/pricing", "checked": "2026-09-29" }
+ ],
+ "coreNode": {
+  "id": "mac-studio-m5-ultra", "product": "Apple Mac Studio, M5 Ultra (base: 96GB unified memory, 1.2TB/s memory bandwidth)", "price": 5499, "currency": "GBP", "vat": "included",
+  "quote": "M5 Ultra chip … From £5,499", "bandwidthGBs": 1200, "memoryGB": 96, "maxWatts": 480,
+  "specQuote": "96GB unified memory … 1.2TB/s memory bandwidth … Maximum continuous power: 480W",
+  "source": "https://www.apple.com/uk/shop/buy-mac/mac-studio", "specSource": "https://www.apple.com/uk/mac-studio/specs/", "checked": "2026-09-29",
+  "why": "A reference core node: any server with similar memory and memory bandwidth serves the same role. Chosen because its price and power figures are published."
+ },
+ "electricity": { "pencePerKwh": 24.51, "what": "UK non-domestic electricity, average price including Climate Change Levy, quarter 2 2026", "quote": "In quarter 2 2026, the average electricity price including CCL was 24.51 pence per kWh", "source": "https://assets.publishing.service.gov.uk/media/6aba2810fe72ed1e2b02f0e7/Quarterly_Energy_Prices_September_2026.pdf", "publisher": "DESNZ, Quarterly Energy Prices, September 2026 (published 29 September 2026)", "checked": "2026-09-29" },
+ "laptopPower": { "wattsLow": 15, "wattsHigh": 55, "chip": "Intel Core i7-1255U", "how": "The chip's published Processor Base Power (15 W) to Maximum Turbo Power (55 W). The model uses 55 W for every laptop-hour of AI work — an upper bound.", "source": "https://www.intel.com/content/www/us/en/products/sku/226259/intel-core-i71255u-processor-12m-cache-up-to-4-70-ghz/specifications.html", "checked": "2026-09-29" },
+ "salaries": {
+  "what": "ONS, Annual Survey of Hours and Earnings 2025 (provisional), Table 14.7a, median gross annual pay, full-time employee jobs, United Kingdom",
+  "source": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/occupation4digitsoc2010ashetable14",
+  "checked": "2026-09-29",
+  "roles": {
+   "2133": { "title": "IT business analysts, architects and systems designers", "median": 60288 },
+   "2134": { "title": "Programmers and software development professionals", "median": 56914 },
+   "2132": { "title": "IT managers", "median": 56438 },
+   "2135": { "title": "Cyber security professionals", "median": 54647 }
+  },
+  "note": "UK medians, not London rates and not market rates for specialist AI engineers — the page lets you change them."
+ }
+}

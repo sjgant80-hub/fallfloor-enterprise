@@ -1,0 +1,65 @@
+{
+ "kind": "fallfloor-enterprise-evidence",
+ "v": 1,
+ "from": {
+  "repo": "https://github.com/sjgant80-hub/fallfloor",
+  "commit": "e4d3b91303a6a1d68c5dec622581551c3fcaef52",
+  "run": "floor-2026-09-29",
+  "ledgerHash": "aec73531c3a0ec4099a845038436e38c8bbf64aa370b2bb71453edfc9a17f5c0",
+  "hops": 898,
+  "page": "https://sjgant80-hub.github.io/fallfloor/",
+  "ci": "https://github.com/sjgant80-hub/fallfloor/actions/runs/36598070217",
+  "how": "Derived by tools/evidence-from-fallfloor.mjs from the pinned commit's summary and signed ledger, using fallfloor's own kernel (outcomeFromHops, labelBreakdown). fallfloor's CI re-verifies every hop and signature of that ledger."
+ },
+ "machine": "one laptop: Intel Core i7-1255U, Iris Xe graphics, 16 GB — separate Chrome processes as nodes, real WebRTC between them",
+ "preregistered": {
+  "rulesPassed": 3,
+  "rulesOf": 5,
+  "failed": [
+   "latency",
+   "chain-shape"
+  ]
+ },
+ "support": {
+  "items": 100,
+  "e2e": 0.39,
+  "silent": 0.52,
+  "caught": 0.09,
+  "replyPass": 0.91,
+  "teamAcc": 0.69,
+  "intentAcc": 0.45,
+  "lostChain": 0,
+  "lostPool": 0,
+  "p95Sec": 62,
+  "tokensIn": 830.62,
+  "tokensOut": 73.01,
+  "laptopSecondsPerItem": 18.063,
+  "baselineE2e": 0.32
+ },
+ "security": {
+  "items": 100,
+  "accuracy": 0.82,
+  "caught": 8,
+  "missed": 0,
+  "wronglyFlagged": 18,
+  "correctlyPassed": 74,
+  "majorityAccuracy": 0.92,
+  "tokensIn": 359.77,
+  "tokensOut": 6,
+  "laptopSecondsPerItem": 4.583
+ },
+ "hr": {
+  "items": 100,
+  "accuracy": 0.85,
+  "tokensIn": 370.39,
+  "tokensOut": 8.56,
+  "laptopSecondsPerItem": 4.966
+ },
+ "coldStartSecMax": 234.4,
+ "latencyRule": {
+  "pass": false,
+  "value": 61.962
+ },
+ "unplannedRestarts": 0,
+ "finished": "2026-09-29T16:22:09.783Z"
+}

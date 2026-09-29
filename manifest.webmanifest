@@ -1,0 +1,11 @@
+{
+  "name": "fallfloor enterprise — local-first AI for a whole company",
+  "short_name": "fallfloor enterprise",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "description": "The reference design for running a company's AI on machines it owns: architecture, sourced costs, the law, a sealed go/no-go board, the team and the rollout.",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
