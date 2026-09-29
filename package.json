@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "main": "kernel.mjs",
-  "description": "fallfloor enterprise — run the whole company's AI on machines it owns",
+  "description": "fallfloor enterprise — their AI helps your people do the work; ours does the work",
   "author": "sjgant80-hub <sjgant80@gmail.com>",
   "license": "MIT",
   "scripts": {
