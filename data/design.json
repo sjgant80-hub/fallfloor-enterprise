@@ -1,27 +1,110 @@
 {
- "_rule": "The design's prose: architecture, operating model, rollout and risks. Numbers are not typed here — the page computes them from the kernel.",
+ "_rule": "The design's prose: the case, the architecture, operating model, rollout and limits. Numbers are not typed here — the page computes them from the kernel.",
+ "pitch": "You already own the computers. You already employ the people. Why rent an AI seat for every head? We build the AI into the work itself. Same machines, same workforce, no per-seat licence, and the software belongs to you.",
+ "freed": "Staff time freed, not a payroll cut. You get that many people's worth of work back. Grow without hiring, or cut the bill. Your call.",
+ "dataClaim": {
+  "claim": "No prompt, no customer record, nothing ever goes to an AI vendor.",
+  "how": "The inference route has no cloud model, no API-key route and no cloud fallback: the open model runs in the browser on each laptop's own GPU. The only outbound AI traffic is downloading the open model weights and the runtime — from Hugging Face, GitHub and jsDelivr in the evidence run, into a hash-pinned internal mirror in this design. A download carries nothing out. CI re-reads the code that produced the evidence on every push and fails if any other path appears."
+ },
  "case": [
-  { "aspect": "Where prompts and answers go", "local": "Nowhere: they stay on the company's laptops and core nodes.", "corporate": "To the vendor's cloud, under its terms and retention settings." },
-  { "aspect": "Who processes the data", "local": "Only the company. No AI processor to contract, audit or monitor for inference.", "corporate": "The vendor, as processor — contracts, due diligence, sub-processors, yearly review." },
-  { "aspect": "International transfers", "local": "None for inference.", "corporate": "Yes, if the model runs outside the UK/EEA: an adequacy route or safeguards, and a transfer risk assessment." },
-  { "aspect": "Cost shape", "local": "Owned capacity plus the people who run it. Volume growth costs hardware in steps.", "corporate": "Seats × people, plus tokens × volume. Growth costs in proportion." },
-  { "aspect": "Evidence of what the AI did", "local": "A signed, hash-linked receipt for every step, held by the company.", "corporate": "Vendor logs and dashboards, on the vendor's terms." },
-  { "aspect": "The model", "local": "Open weights (Apache 2.0), hash-pinned; nobody changes it under you.", "corporate": "The vendor's model, updated on the vendor's schedule." },
-  { "aspect": "Quality", "local": "Open 32B-class models: good for drafting, extraction and routing; below frontier models on hard reasoning. Measured before every go-live.", "corporate": "Frontier models: the strongest general quality available." },
-  { "aspect": "Running it", "local": "Yours: nodes, updates, security, on-call.", "corporate": "Mostly the vendor's; integration and governance stay yours." },
-  { "aspect": "Leaving", "local": "Nothing to leave: the data, the models and the receipts are already yours.", "corporate": "Exports, contract terms and re-integration." }
+  {
+   "aspect": "Who does the work",
+   "local": "The AI does it: triage, screening, routing, extraction — on the company's own laptops. People approve and confirm.",
+   "corporate": "The staff do it, with Copilot helping each person. Their time on the work stays on the bill."
+  },
+  {
+   "aspect": "Hardware",
+   "local": "The laptops already on the desks. Nothing new.",
+   "corporate": "The same laptops. Nothing new."
+  },
+  {
+   "aspect": "Where prompts and answers go",
+   "local": "Nowhere: they stay on the company's laptops.",
+   "corporate": "To the vendor's cloud, under its terms and retention settings."
+  },
+  {
+   "aspect": "Who processes the data",
+   "local": "Only the company. No AI processor to contract, audit or monitor.",
+   "corporate": "The vendor, as processor — contracts, due diligence, sub-processors, yearly review."
+  },
+  {
+   "aspect": "International transfers",
+   "local": "None.",
+   "corporate": "Yes, if the model runs outside the UK/EEA: an adequacy route or safeguards, and a transfer risk assessment."
+  },
+  {
+   "aspect": "How the bill moves",
+   "local": "Electricity for the AI work, a flat team, compliance. Volume growth costs power, not people.",
+   "corporate": "Seats × people, rising with prices every year; people's time on the work, rising with volume and wages."
+  },
+  {
+   "aspect": "Evidence of what the AI did",
+   "local": "A signed, hash-linked receipt for every step, held by the company.",
+   "corporate": "Vendor logs and dashboards, on the vendor's terms."
+  },
+  {
+   "aspect": "The model",
+   "local": "Open weights (Apache 2.0), hash-pinned; nobody changes it under you.",
+   "corporate": "The vendor's model, updated on the vendor's schedule."
+  },
+  {
+   "aspect": "Leaving",
+   "local": "Nothing to leave: the data, the models and the receipts are already yours.",
+   "corporate": "Exports, contract terms and re-integration."
+  }
  ],
+ "apiRoute": "That is the route where customer data leaves the building: a processor contract with the model vendor (GDPR Art 28), transfer assessments (Chapter V), a per-token bill — and the Copilot seats are still on every desk.",
  "architecture": [
-  { "layer": "The floor", "what": "Staff laptops enrolled as AI nodes: Chrome or Edge running small open models on the laptop's own GPU (WebGPU). Triage, routing and screening. Enrolled by device policy, run only on mains power, disk-encrypted.", "evidence": "Measured in fallfloor: seconds per item, cold start, nothing lost when a node died." },
-  { "layer": "The core", "what": "A small rack of on-premises inference nodes running a 32B-class open model (Qwen2.5-32B-Instruct, Apache 2.0) for customer reply drafts, the staff knowledge assistant and KYC extraction. N + 1 for resilience.", "evidence": "Throughput is a planning figure until Phase 1 measures it on the chosen node." },
-  { "layer": "The mesh and the desk", "what": "Peer-to-peer WebRTC data channels inside the LAN; a desk dispatches work, keeps queues and reassigns work from a node that has gone. At-least-once delivery with de-duplication.", "evidence": "fallfloor: 0 of 100 items lost in both kill tests." },
-  { "layer": "Receipts", "what": "Every step is signed by the node that did it (Ed25519) and hash-linked to the step before; the ledger is replicated to two core nodes and kept for the retention period.", "evidence": "fallfloor: 898 hops, every signature re-verified in CI." },
-  { "layer": "Gates", "what": "Deterministic gates on every output (the reply gate: right article, no invented numbers, links or emails) and a dual-map go/no-go gate on every deployment decision.", "evidence": "The board below, sealed from fallfloor's evidence." },
-  { "layer": "Knowledge", "what": "A retrieval index over the bank's own documents (policies, help articles, procedures), built and stored on the core nodes.", "evidence": "Design element; built in Phase 2." },
-  { "layer": "Identity and control", "what": "The existing identity provider (single sign-on), role-based access to each AI system, a register of AI systems with a named owner each, and change control for model updates.", "evidence": "Design element; set up in Phase 0." },
-  { "layer": "Integration", "what": "Connectors to the ticketing system, the email gateway and the HR system, running inside the network.", "evidence": "Design element." },
-  { "layer": "People in the loop", "what": "Agents approve customer replies; analysts confirm KYC records; the HR team answers the questions the router sends them.", "evidence": "The board decides where a person must stay in the loop." },
-  { "layer": "The one door out", "what": "Outbound traffic for AI is limited to fetching model weights (no personal data) into a hash-pinned internal mirror. Closed by default.", "evidence": "Design element." }
+  {
+   "layer": "The floor",
+   "what": "The laptops already on the desks, enrolled as AI nodes by device policy: Chrome or Edge running open models on each laptop's own GPU (WebGPU), only on mains power, disks encrypted. Every workload runs here — triage, screening, routing, KYC extraction and the staff knowledge assistant.",
+   "evidence": "Measured in fallfloor: seconds per item, cold start, nothing lost when a node died."
+  },
+  {
+   "layer": "Heavier jobs, same machines",
+   "what": "Longer prompts (documents, retrieved passages) go to the same floor as queued jobs, sized from per-token rates fitted to the measured runs. A knowledge-assistant answer takes about a minute; a KYC document about half a minute. Nothing new is bought.",
+   "evidence": "Fitted from fallfloor's measured seconds and tokens; Phase 1 measures them on the bank's own documents."
+  },
+  {
+   "layer": "The mesh and the desk",
+   "what": "Peer-to-peer WebRTC data channels inside the LAN; a desk — a browser tab on an always-on machine the company already runs — dispatches work, keeps queues and reassigns work from a node that has gone. At-least-once delivery with de-duplication.",
+   "evidence": "fallfloor: 0 of 100 items lost in both kill tests."
+  },
+  {
+   "layer": "Receipts",
+   "what": "Every step is signed by the node that did it (Ed25519) and hash-linked to the step before; the ledger is replicated across enrolled nodes and kept for the retention period.",
+   "evidence": "fallfloor: 898 hops, every signature re-verified in CI."
+  },
+  {
+   "layer": "Gates",
+   "what": "Deterministic gates on every output (the reply gate: right article, no invented numbers, links or emails) and a dual-map go/no-go gate on every deployment decision.",
+   "evidence": "The board below, sealed from fallfloor's evidence."
+  },
+  {
+   "layer": "Knowledge",
+   "what": "A retrieval index over the bank's own documents (policies, help articles, procedures), built on the floor and replicated to the always-on machines.",
+   "evidence": "Design element; built in Phase 2."
+  },
+  {
+   "layer": "Identity and control",
+   "what": "The existing identity provider (single sign-on), role-based access to each AI system, a register of AI systems with a named owner each, and change control for model updates.",
+   "evidence": "Design element; set up in Phase 0."
+  },
+  {
+   "layer": "Integration",
+   "what": "Connectors to the ticketing system, the email gateway and the HR system, running inside the network.",
+   "evidence": "Design element."
+  },
+  {
+   "layer": "People in the loop",
+   "what": "Agents approve customer replies; analysts confirm KYC records; flagged messages go to a person; the HR team answers what the router sends them.",
+   "evidence": "The board decides where a person must stay in the loop."
+  },
+  {
+   "layer": "The one door out",
+   "what": "Outbound traffic for AI is limited to fetching model weights (no personal data) into a hash-pinned internal mirror. Closed by default.",
+   "evidence": "Design element."
+  }
  ],
  "operating": [
   "A named owner for every AI system, in a register the DPO can read (Phase 0).",
@@ -31,18 +114,42 @@
   "Change control for models: a new model or prompt goes through the same pre-registered test before it replaces the old one."
  ],
  "rollout": [
-  { "phase": "Phase 0 — Decide and govern", "months": "Month 1", "do": "AI system register with owners; lawful basis and DPIA screening per workload; AI Act role map (provider and deployer for in-house systems); AI literacy plan; Article 50 notice wording; pre-register the Phase 1 thresholds.", "gate": "The CTO signs the register, the thresholds and the budget for one core node." },
-  { "phase": "Phase 1 — Pilot on your own data", "months": "Months 2–3", "do": "One core node and twenty enrolled laptops; the fallfloor method on the bank's own (pseudonymised) tickets, messages and documents; measure core-node throughput, agent catch rate and quality per workload.", "gate": "Every decision re-run on the pilot's evidence. PASS goes to Phase 2; PENDING names the measurement still missing; BLOCK stays out." },
-  { "phase": "Phase 2 — Assisted production", "months": "Months 4–6", "do": "Workloads that passed go live with a person in the loop: HR routing, reply drafts for agents, KYC extraction with analyst confirmation. Knowledge index built. Core nodes bought to the measured capacity.", "gate": "Monthly quality sampling against the pre-registered thresholds; incidents and data-subject requests handled through the normal processes." },
-  { "phase": "Phase 3 — Scale", "months": "Months 7–12", "do": "The staff knowledge assistant to all knowledge workers; the floor to its enrolled laptops; seat licences not renewed where the local assistant measured good enough.", "gate": "Seat renewals are a CTO decision on measured usage and quality, not a default." },
-  { "phase": "Phase 4 — Run and re-gate", "months": "Year 2 onwards", "do": "Quarterly re-gating, model upgrades through change control, capacity added in steps. High-risk uses (such as credit decisions) only through the AI Act high-risk regime, which applies from 2 December 2027.", "gate": "Each quarter's board is sealed and kept with the audit record." }
+  {
+   "phase": "Phase 0 — Decide and govern",
+   "months": "Month 1",
+   "do": "AI system register with owners; lawful basis and DPIA screening per workload; AI Act role map (provider and deployer for in-house systems); AI literacy plan; Article 50 notice wording; pre-register the Phase 1 thresholds.",
+   "gate": "The CTO signs the register and the thresholds. No hardware to approve."
+  },
+  {
+   "phase": "Phase 1 — Pilot on your own data",
+   "months": "Months 2–3",
+   "do": "Twenty enrolled laptops; the fallfloor method on the bank's own (pseudonymised) tickets, messages and documents; measure seconds per item, quality per workload and the agent catch rate.",
+   "gate": "Every decision re-run on the pilot's evidence. PASS goes to Phase 2; PENDING names the measurement still missing; BLOCK stays out."
+  },
+  {
+   "phase": "Phase 2 — Assisted production",
+   "months": "Months 4–6",
+   "do": "Workloads that passed go live with a person in the loop: HR routing, reply drafts for agents, KYC extraction with analyst confirmation. Knowledge index built. The floor enrolled to its planned share of laptops.",
+   "gate": "Monthly quality sampling against the pre-registered thresholds; incidents and data-subject requests handled through the normal processes."
+  },
+  {
+   "phase": "Phase 3 — Scale",
+   "months": "Months 7–12",
+   "do": "The staff knowledge assistant to all knowledge workers; Copilot seats not renewed where the local assistant measured good enough.",
+   "gate": "Seat renewals are a CTO decision on measured usage and quality, not a default."
+  },
+  {
+   "phase": "Phase 4 — Run and re-gate",
+   "months": "Year 2 onwards",
+   "do": "Quarterly re-gating, model upgrades through change control, more laptops enrolled as volume grows. High-risk uses (such as credit decisions) only through the AI Act high-risk regime, which applies from 2 December 2027.",
+   "gate": "Each quarter's board is sealed and kept with the audit record."
+  }
  ],
  "limits": [
-  "A modelled company: the volumes, team sizes, compliance days and day rate are assumptions, labelled and changeable on this page.",
-  "The measured evidence comes from one laptop in fallfloor, on public datasets. The bank's own data will score differently — that is what Phase 1 measures.",
-  "Core-node throughput is a planning figure from the node's published memory bandwidth, not a measurement.",
-  "The corporate side prices the same work, not the same quality: frontier models would very likely answer more of it correctly.",
-  "Staff are the largest line on both sides and rest on assumptions about team size; the cost section shows how much of each total rests on estimates.",
-  "The compliance map quotes the law and says what each stack does to each duty. It is a map for the CTO and DPO; counsel signs off the final position."
+  "A modelled company: volumes, seconds saved per item, team size, compliance days and the day rate are assumptions — floor-level, labelled and changeable on this page.",
+  "The measured evidence comes from one laptop in fallfloor, on public datasets. The bank's own data will score differently — Phase 1 measures it.",
+  "Heavier jobs (documents, the knowledge assistant) are sized from per-token rates fitted to the measured runs; an answer takes about a minute on a laptop. Copilot is the stronger assistant; the case here is the work the AI takes off people's desks.",
+  "The sensitivity table re-runs the whole plan with each lever moved; even with every downside at once, it shows what the saving shrinks to. It does not cover a lever it does not list — change any input above and every figure recomputes.",
+  "The compliance map quotes the law and says what each stack does to each duty. It is the CTO's and the DPO's map; counsel signs off the final position."
  ]
 }

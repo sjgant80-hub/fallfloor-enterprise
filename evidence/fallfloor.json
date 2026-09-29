@@ -61,5 +61,21 @@
   "value": 61.962
  },
  "unplannedRestarts": 0,
- "finished": "2026-09-29T16:22:09.783Z"
+ "finished": "2026-09-29T16:22:09.783Z",
+ "boundary": {
+  "readFrom": [
+   "runtime.js@e4d3b91",
+   "index.html@e4d3b91"
+  ],
+  "fetchTargets": [
+   "'data/' + job + '.json'",
+   "S.ledgerPath"
+  ],
+  "importTargets": [
+   "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.85/+esm"
+  ],
+  "stunOffByDefault": true,
+  "aiApiHosts": [],
+  "otherChannels": []
+ }
 }

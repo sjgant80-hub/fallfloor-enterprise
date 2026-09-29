@@ -2,7 +2,7 @@
 // garbage in → a structured refusal, never an exception. The page runs this exact file (tools/make-page.mjs inlines it),
 // CI mutation-gates it, and every number the page shows is computed here from sourced inputs.
 //
-//   sourced figures · capacity (laptop floor + core nodes) · 5-year cost, both sides, every line with its basis ·
+//   sourced figures · capacity (the laptops already owned) · 5-year cost, both sides, every line with its basis ·
 //   the compliance map (who holds which duty, on which stack) · the go/no-go board (a dual-map gate per decision,
 //   fed by fallfloor's receipted evidence).
 //
@@ -59,48 +59,51 @@ export function apiCostPerItem(tokensIn, tokensOut, price, gbpPerUsd) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════════════════════════
-// CAPACITY — the laptop floor from MEASURED seconds per item; the core nodes from a bandwidth-bound planning figure
+// CAPACITY — everything runs on the laptops the company already owns. Seconds per item are MEASURED (fallfloor) for
+// the measured workloads; for the others they come from per-token rates fitted to those same measurements.
 // ══════════════════════════════════════════════════════════════════════════════════════════════════
-/** coreSecondsPerItem(tokensIn, tokensOut, core) — read the prompt at prefillTokPerSec, then generate at
- *  decode = efficiency × bandwidth ÷ weights (generation is memory-bandwidth bound). */
-export function coreSecondsPerItem(tokensIn, tokensOut, core) {
-  if (!isNum(tokensIn) || !isNum(tokensOut) || tokensIn < 0 || tokensOut < 0 || !isObj(core)) return null;
-  const { bandwidthGBs, weightsGB, efficiency, prefillTokPerSec } = core;
-  if (![bandwidthGBs, weightsGB, efficiency, prefillTokPerSec].every((v) => isNum(v) && v > 0) || efficiency > 1) return null;
-  const decode = (efficiency * bandwidthGBs) / weightsGB;
-  return { seconds: tokensIn / prefillTokPerSec + tokensOut / decode, decodeTokPerSec: decode };
+/** floorRates(points) — laptop-seconds per prompt token and per output token, a least-squares fit (no intercept) to
+ *  measured workloads [{ tokensIn, tokensOut, seconds }]. */
+export function floorRates(points) {
+  if (!Array.isArray(points) || points.length < 2) return fail('floorRates needs at least two measured workloads');
+  let aa = 0, ab = 0, bb = 0, as = 0, bs = 0;
+  for (const p of points) {
+    if (!isObj(p) || ![p.tokensIn, p.tokensOut, p.seconds].every((v) => isNum(v) && v >= 0)) return fail('each measured workload: tokensIn, tokensOut and seconds ≥ 0');
+    aa += p.tokensIn * p.tokensIn; ab += p.tokensIn * p.tokensOut; bb += p.tokensOut * p.tokensOut;
+    as += p.tokensIn * p.seconds; bs += p.tokensOut * p.seconds;
+  }
+  const det = aa * bb - ab * ab;
+  if (!(det > 0)) return fail('the measured workloads do not separate prompt tokens from output tokens');
+  const perIn = (as * bb - bs * ab) / det, perOut = (bs * aa - as * ab) / det;
+  if (perIn < 0 || perOut < 0) return fail('the fit gave a negative rate — measure more workloads');
+  return { ok: true, perIn, perOut };
 }
 
-/** capacity(input) → per year: laptop-floor hours and utilisation, core hours and the nodes needed (N + spare). */
+/** floorSeconds(tokensIn, tokensOut, rates) — the planning estimate for a workload that was not itself measured. */
+export function floorSeconds(tokensIn, tokensOut, rates) {
+  if (!isNum(tokensIn) || !isNum(tokensOut) || tokensIn < 0 || tokensOut < 0 || !isObj(rates) || !isNum(rates.perIn) || !isNum(rates.perOut)) return null;
+  return tokensIn * rates.perIn + tokensOut * rates.perOut;
+}
+
+/** capacity(input) → per year: laptop-hours of AI work a month, the share of the enrolled floor it uses, and whether it fits. */
 export function capacity(input) {
   if (!isObj(input) || !Array.isArray(input.workloads) || input.workloads.length === 0) return fail('capacity needs workloads');
-  const { workloads, floor, core, growth, years } = input;
+  const { workloads, floor, growth, years } = input;
   if (!isObj(floor) || ![floor.laptops, floor.nodeShare, floor.hoursPerDay, floor.daysPerMonth].every((v) => isNum(v) && v >= 0) || floor.nodeShare > 1) return fail('floor: laptops, nodeShare (0–1), hoursPerDay, daysPerMonth');
-  if (!isObj(core) || !isNum(core.hoursPerMonth) || core.hoursPerMonth <= 0 || !isNum(core.targetUtil) || core.targetUtil <= 0 || core.targetUtil > 1 || !Number.isInteger(core.spare) || core.spare < 0) return fail('core: hoursPerMonth, targetUtil (0–1], spare');
   if (!isNum(growth) || growth < -0.5 || growth > 5 || !Number.isInteger(years) || years < 1 || years > 10) return fail('growth and years (1–10)');
   const per = [];
   for (const w of workloads) {
-    if (!isObj(w) || !isStr(w.id) || !['laptop', 'core'].includes(w.tier) || !isNum(w.perMonth) || w.perMonth < 0) return fail('each workload: id, tier (laptop|core), perMonth');
-    if (w.tier === 'laptop') {
-      if (!isNum(w.secondsPerItem) || w.secondsPerItem < 0) return fail(w.id + ': a laptop workload needs its measured seconds per item');
-      per.push({ id: w.id, tier: 'laptop', secondsPerItem: w.secondsPerItem, perMonth: w.perMonth });
-    } else {
-      const c = coreSecondsPerItem(w.tokensIn, w.tokensOut, core);
-      if (c === null) return fail(w.id + ': a core workload needs tokensIn, tokensOut and a valid core node');
-      per.push({ id: w.id, tier: 'core', secondsPerItem: r2(c.seconds), perMonth: w.perMonth });
-    }
+    if (!isObj(w) || !isStr(w.id) || !isNum(w.perMonth) || w.perMonth < 0 || !isNum(w.secondsPerItem) || w.secondsPerItem < 0) return fail('each workload: id, perMonth and seconds per item');
+    per.push({ id: w.id, perMonth: w.perMonth, secondsPerItem: r2(w.secondsPerItem), basis: w.basis === 'measured' ? 'measured' : 'estimate' });
   }
   const avail = floor.laptops * floor.nodeShare * floor.hoursPerDay * floor.daysPerMonth;
   const perYear = [];
   for (let y = 0; y < years; y++) {
     const f = Math.pow(1 + growth, y);
-    let lap = 0, cor = 0;
-    for (const p of per) { const h = (p.perMonth * f * p.secondsPerItem) / 3600; if (p.tier === 'laptop') lap += h; else cor += h; }
-    const nodes = cor > 0 ? Math.ceil(cor / (core.hoursPerMonth * core.targetUtil)) + core.spare : 0;
-    perYear.push({ year: y + 1, laptopHours: r2(lap), laptopUtil: avail > 0 ? Math.round((lap / avail) * 1000) / 1000 : null, coreHours: r2(cor), coreNodes: nodes, floorOverloaded: lap > avail });
+    const hours = per.reduce((a, p) => a + (p.perMonth * f * p.secondsPerItem) / 3600, 0);
+    perYear.push({ year: y + 1, laptopHours: r2(hours), laptopUtil: avail > 0 ? Math.round((hours / avail) * 1000) / 1000 : null, floorOverloaded: hours > avail });
   }
-  const dec = coreSecondsPerItem(1, 1, core);
-  return { ok: true, laptopHoursAvailable: r2(avail), decodeTokPerSec: dec ? r2(dec.decodeTokPerSec) : null, perWorkload: per, perYear };
+  return { ok: true, laptopHoursAvailable: r2(avail), perWorkload: per, perYear };
 }
 
 // ══════════════════════════════════════════════════════════════════════════════════════════════════
@@ -138,38 +141,47 @@ export function tco(lines, years) {
   };
 }
 
-/** plan(m) — the whole design from its inputs: capacity → cost lines → tco. m = { company, prices, evidence, choices }. */
+export const CORPORATE_MODES = ['seats', 'seats+api'];
+
+/** plan(m) — the whole comparison from its inputs. m = { company, prices, evidence, choices }.
+ *  Corporate ('seats'): Copilot on every desk — it helps each person, the people still do the work, so their time on it
+ *  is on the corporate bill. ('seats+api'): the same seats, with the work automated through a cloud API instead.
+ *  Local-first: the open models on the laptops already owned do the work; its extra cost is the electricity.
+ *  Hardware is the same on both sides and cancels. Seats, teams, compliance, people's time and power rise with CPI. */
 export function plan(m) {
   if (!isObj(m) || !isObj(m.company) || !isObj(m.prices) || !isObj(m.evidence)) return fail('plan needs company, prices and evidence');
   const C = m.company, P = m.prices, E = m.evidence;
   const ch = { ...(isObj(C.choices) ? C.choices : {}), ...(isObj(m.choices) ? m.choices : {}) };
   const years = C.years, growth = isObj(C.growth) ? C.growth.value : undefined;
   const fx = isObj(P.fx) ? P.fx.gbpPerUsd : undefined, vatRate = isObj(P.vatRate) ? P.vatRate.value : undefined;
+  const cpi = isObj(P.cpi) ? P.cpi.value : undefined, wage = isObj(P.wage) ? P.wage.value : undefined;
   if (!isNum(fx) || !isNum(vatRate)) return fail('prices need fx and vatRate');
+  if (!isNum(cpi) || cpi < -0.1 || cpi > 0.5 || !isNum(wage) || wage < 0) return fail('prices need cpi (−10% to 50%) and the wage');
+  if (!CORPORATE_MODES.includes(ch.corporate)) return fail('corporate must be seats or seats+api');
   if (!Array.isArray(C.workloads)) return fail('company.workloads');
-  // workloads with their tokens and (for the floor) measured seconds
+  // the measured workloads first: their seconds are measured, and they fit the per-token rates for the rest
   const wl = [];
   for (const w of C.workloads) {
     if (!isObj(w) || !isStr(w.id)) return fail('each workload needs an id');
+    if (!isNum(w.secondsSaved) || w.secondsSaved < 0) return fail(w.id + ': seconds of staff time saved per item');
     if (w.tokens === 'measured') {
       const ev = E[w.evidence];
       if (!isObj(ev) || !isNum(ev.tokensIn) || !isNum(ev.tokensOut) || !isNum(ev.laptopSecondsPerItem)) return fail(w.id + ': its evidence (' + String(w.evidence) + ') is missing');
-      wl.push({ ...w, tokensIn: ev.tokensIn, tokensOut: ev.tokensOut, secondsPerItem: ev.laptopSecondsPerItem, tokenBasis: 'measured' });
-    } else if (w.tokens === 'estimate') wl.push({ ...w, tokenBasis: 'estimate' });
+      wl.push({ ...w, tokensIn: ev.tokensIn, tokensOut: ev.tokensOut, secondsPerItem: ev.laptopSecondsPerItem, basis: 'measured' });
+    } else if (w.tokens === 'estimate') wl.push({ ...w, basis: 'estimate' });
     else return fail(w.id + ': tokens must be measured or estimate');
   }
-  const node = P.coreNode, core = C.core;
-  if (!isObj(node) || !isObj(core) || !isObj(core.model)) return fail('core node and core settings');
-  const coreIn = { bandwidthGBs: node.bandwidthGBs, weightsGB: core.model.weightsGB, efficiency: core.efficiency && core.efficiency.value, prefillTokPerSec: core.prefillTokPerSec && core.prefillTokPerSec.value,
-    hoursPerMonth: core.hoursPerMonth && core.hoursPerMonth.value, targetUtil: core.targetUtil && core.targetUtil.value, spare: core.spare && core.spare.value };
-  const fl = C.floor || {};
-  const cap = capacity({ workloads: wl, floor: { laptops: C.profile && C.profile.laptops, nodeShare: fl.nodeShare && fl.nodeShare.value, hoursPerDay: fl.hoursPerDay && fl.hoursPerDay.value, daysPerMonth: fl.daysPerMonth && fl.daysPerMonth.value }, core: coreIn, growth, years });
+  const rates = floorRates(wl.filter((w) => w.basis === 'measured').map((w) => ({ tokensIn: w.tokensIn, tokensOut: w.tokensOut, seconds: w.secondsPerItem })));
+  if (!rates.ok) return rates;
+  for (const w of wl) if (w.basis === 'estimate') { w.secondsPerItem = floorSeconds(w.tokensIn, w.tokensOut, rates); if (w.secondsPerItem === null) return fail(w.id + ': an estimated workload needs tokensIn and tokensOut'); }
+  const fl = isObj(C.floor) ? C.floor : {};
+  const cap = capacity({ workloads: wl, floor: { laptops: C.profile && C.profile.laptops, nodeShare: fl.nodeShare && fl.nodeShare.value, hoursPerDay: fl.hoursPerDay && fl.hoursPerDay.value, daysPerMonth: fl.daysPerMonth && fl.daysPerMonth.value }, growth, years });
   if (!cap.ok) return cap;
   const Y = (fn) => Array.from({ length: years }, (_, i) => fn(i));
-  const grow = (i) => Math.pow(1 + growth, i);
+  const grow = (i) => Math.pow(1 + growth, i), infl = (i) => Math.pow(1 + cpi, i);
   const lines = [];
 
-  // ── the corporate / cloud side ──
+  // ── the corporate side ──
   const seat = (P.seats || []).find((s) => s.id === ch.seat);
   if (!seat) return fail('unknown seat product: ' + String(ch.seat));
   const seatShare = ch.seatShare;
@@ -180,21 +192,38 @@ export function plan(m) {
   if (seat.maxSeats !== null && seat.maxSeats !== undefined && seatsN > seat.maxSeats) warnings.push(seat.product + ' is sold for up to ' + seat.maxSeats + ' seats; this company needs ' + seatsN + '.');
   const seatGbp = toGbp(exVat(seat.price, seat.vat, vatRate), seat.currency, fx);
   if (seatGbp === null) return fail('seat price');
-  lines.push({ id: 'cloud-seats', side: 'cloud', label: seatsN + ' × ' + seat.product + ' (' + seat.per + ')', basis: 'list-price', source: seat.source, checked: seat.checked, perYear: Y(() => seatsN * seatGbp * 12) });
+  lines.push({ id: 'cloud-seats', side: 'cloud', label: seatsN + ' × ' + seat.product + ' (' + seat.per + '), rising with CPI', basis: 'list-price', source: seat.source, checked: seat.checked, perYear: Y((i) => seatsN * seatGbp * 12 * infl(i)) });
+  // people's time on the work the AI takes over: minutes per item × volume, less what still goes to a person
+  const S = C.staff, ST = C.staffTime;
+  if (!isObj(S) || !isObj(S.onCost) || !isNum(S.onCost.value) || S.onCost.value < 1) return fail('staff on-cost');
+  if (!isObj(ST) || !isObj(ST.hoursPerFte) || !isNum(ST.hoursPerFte.value) || ST.hoursPerFte.value <= 0) return fail('staffTime.hoursPerFte');
+  const kept = (w) => {
+    if (!isStr(w.reviewedFrom)) return 1;
+    const ev = E[w.reviewedFrom];
+    if (!isObj(ev) || !isNum(ev.items) || ev.items <= 0 || !isNum(ev.caught) || !isNum(ev.wronglyFlagged)) return null;
+    return 1 - (ev.caught + ev.wronglyFlagged) / ev.items;      // the share the model clears; the flagged share still goes to a person
+  };
+  const byWork = [];
+  for (const w of wl) { const k = kept(w); if (k === null) return fail(w.id + ': the evidence for what still goes to a person is missing'); byWork.push({ id: w.id, hoursPerMonth: (w.secondsSaved / 3600) * w.perMonth * k }); }
+  const staffHours = byWork.reduce((a, b) => a + b.hoursPerMonth, 0);
   const api = (P.api || []).find((a) => a.id === ch.apiModel);
   if (!api) return fail('unknown API model: ' + String(ch.apiModel));
-  for (const w of wl) {
-    const viaApi = w.cloud === 'api' || (w.cloud === 'seats' && seat.plusUsage === true);
-    if (!viaApi) continue;
-    const per = apiCostPerItem(w.tokensIn, w.tokensOut, api, fx);
-    if (per === null) return fail(w.id + ': tokens');
-    const line = { id: 'cloud-api-' + w.id, side: 'cloud', label: w.name + ' — ' + api.provider + ' ' + api.model + ' at list price', perYear: Y((i) => w.perMonth * grow(i) * 12 * per) };
-    if (w.tokenBasis === 'measured') lines.push({ ...line, basis: 'list-price', source: api.source, checked: api.checked });
-    else lines.push({ ...line, basis: 'estimate', why: 'list price × estimated tokens per item (' + w.tokensIn + ' in / ' + w.tokensOut + ' out)' });
+  if (ch.corporate === 'seats') {
+    lines.push({ id: 'cloud-staff-time', side: 'cloud', label: 'Staff time on the work the AI takes over (' + Math.round(staffHours).toLocaleString('en-GB') + ' hours a month in year 1) — the staff time local-first frees — at the National Living Wage, growing with volume and CPI', basis: 'assumption', why: 'seconds saved per item are floor-level assumptions; the wage is the statutory National Living Wage (' + P.wage.source + ') × on-cost', perYear: Y((i) => staffHours * grow(i) * 12 * wage * S.onCost.value * infl(i)) });
+  } else {
+    for (const w of wl) {
+      const viaApi = w.cloud === 'api' || (w.cloud === 'seats' && seat.plusUsage === true);
+      if (!viaApi) continue;
+      const per = apiCostPerItem(w.tokensIn, w.tokensOut, api, fx);
+      if (per === null) return fail(w.id + ': tokens');
+      const line = { id: 'cloud-api-' + w.id, side: 'cloud', label: w.name + ' — ' + api.provider + ' ' + api.model + ' at list price', perYear: Y((i) => w.perMonth * grow(i) * 12 * per) };
+      if (w.basis === 'measured') lines.push({ ...line, basis: 'list-price', source: api.source, checked: api.checked });
+      else lines.push({ ...line, basis: 'estimate', why: 'list price × estimated tokens per item (' + w.tokensIn + ' in / ' + w.tokensOut + ' out)' });
+    }
   }
-  // ── staff and compliance, both sides ──
-  const S = C.staff, sal = P.salaries && P.salaries.roles;
-  if (!isObj(S) || !isObj(sal) || !isObj(S.onCost) || !isNum(S.onCost.value) || S.onCost.value < 1) return fail('staff and salaries');
+  // ── the team and the compliance work, both sides, rising with CPI ──
+  const sal = P.salaries && P.salaries.roles;
+  if (!isObj(sal)) return fail('salaries');
   for (const side of SIDES) {
     let cost = 0;
     for (const r of S[side] || []) {
@@ -202,35 +231,71 @@ export function plan(m) {
       cost += r.fte * sal[r.soc].median * S.onCost.value;
     }
     const fte = (S[side] || []).reduce((a, r) => a + r.fte, 0);
-    lines.push({ id: side + '-staff', side, label: fte + ' FTE (' + (S[side] || []).map((r) => r.role).join('; ') + ')', basis: 'estimate', why: 'ONS ASHE 2025 median salaries × ' + S.onCost.value + ' on-cost; team size is this design\'s assumption', perYear: Y(() => cost) });
+    lines.push({ id: side + '-team', side, label: 'The team that runs it: ' + fte + ' FTE (' + (S[side] || []).map((r) => r.role).join('; ') + ')', basis: 'estimate', why: 'ONS ASHE 2025 median salaries × ' + S.onCost.value + ' on-cost, rising with CPI; the team size is this design\'s assumption', perYear: Y((i) => cost * infl(i)) });
   }
   const CP = C.compliance;
   if (!isObj(CP) || !isObj(CP.dayRate) || !isNum(CP.dayRate.value) || CP.dayRate.value < 0) return fail('compliance');
   for (const side of SIDES) {
     const d = CP[side];
     if (!isObj(d) || !isNum(d.daysYear1) || !isNum(d.daysPerYear) || d.daysYear1 < 0 || d.daysPerYear < 0) return fail(side + ' compliance days');
-    lines.push({ id: side + '-compliance', side, label: 'Compliance work: ' + d.why, basis: 'assumption', why: d.daysYear1 + ' days in year 1, then ' + d.daysPerYear + ' a year, at ' + CP.dayRate.value + ' a day', perYear: Y((i) => (i === 0 ? d.daysYear1 : d.daysPerYear) * CP.dayRate.value) });
+    lines.push({ id: side + '-compliance', side, label: 'Compliance work: ' + d.why, basis: 'assumption', why: d.daysYear1 + ' days in year 1, then ' + d.daysPerYear + ' a year, at ' + CP.dayRate.value + ' a day, rising with CPI', perYear: Y((i) => (i === 0 ? d.daysYear1 : d.daysPerYear) * CP.dayRate.value * infl(i)) });
   }
-  // ── the local-first side ──
-  const nodeGbp = toGbp(exVat(node.price, node.vat, vatRate), node.currency, fx);
-  if (nodeGbp === null || !isObj(core.lifeYears) || !Number.isInteger(core.lifeYears.value) || core.lifeYears.value < 1) return fail('core node price and lifeYears');
-  const life = core.lifeYears.value;
-  const bought = [];          // nodes bought per year (new capacity + replacements at end of life)
-  for (let i = 0; i < years; i++) {
-    const need = cap.perYear[i].coreNodes;
-    const alive = bought.reduce((a, b, j) => a + (i - j < life ? b : 0), 0);
-    bought.push(Math.max(0, need - alive));
-  }
-  lines.push({ id: 'local-core-nodes', side: 'local', label: 'Core nodes: ' + node.product + ', bought as capacity grows and replaced every ' + life + ' years', basis: 'list-price', source: node.source, checked: node.checked, perYear: bought.map((b) => b * nodeGbp) });
-  const el = P.electricity, lp = P.laptopPower;
-  if (!isObj(el) || !isNum(el.pencePerKwh) || !isObj(lp) || !isNum(lp.wattsHigh) || !isNum(node.maxWatts)) return fail('electricity, laptop power, node power');
-  lines.push({ id: 'local-core-power', side: 'local', label: 'Core node electricity at the published maximum power, every powered hour', basis: 'estimate', why: node.maxWatts + ' W (Apple spec, maximum continuous) × ' + coreIn.hoursPerMonth + ' h a month × ' + el.pencePerKwh + 'p/kWh (DESNZ) — an upper bound', perYear: Y((i) => cap.perYear[i].coreNodes * node.maxWatts * coreIn.hoursPerMonth * 12 / 1000 * el.pencePerKwh / 100) });
-  lines.push({ id: 'local-floor-power', side: 'local', label: 'Laptop electricity for the AI work on the floor', basis: 'estimate', why: 'measured laptop-hours × ' + lp.wattsHigh + ' W (the chip\'s maximum turbo power) × ' + el.pencePerKwh + 'p/kWh (DESNZ) — an upper bound', perYear: Y((i) => cap.perYear[i].laptopHours * 12 * lp.wattsHigh / 1000 * el.pencePerKwh / 100) });
-  lines.push({ id: 'local-laptops', side: 'local', label: 'Laptops: already owned and refreshed on the normal cycle', basis: 'assumption', why: 'no new laptops are bought for this; wear is not costed', perYear: Y(() => 0) });
-  lines.push({ id: 'local-models', side: 'local', label: 'Model licences: Qwen2.5 Instruct weights under Apache 2.0', basis: 'list-price', source: 'https://huggingface.co/Qwen/Qwen2.5-32B-Instruct', checked: P.checked, perYear: Y(() => 0) });
+  // ── the local-first side: the AI does the work, on the machines already owned; its extra cost is the power ──
+  const el = P.electricity;
+  if (!isObj(el) || !isNum(el.pencePerKwh) || !isObj(fl.watts) || !isNum(fl.watts.value) || fl.watts.value < 0) return fail('electricity and the floor watts');
+  lines.push({ id: 'local-power', side: 'local', label: 'Electricity for the AI work on the laptops (' + Math.round(cap.perYear[0].laptopHours).toLocaleString('en-GB') + ' laptop-hours a month in year 1)', basis: 'estimate', why: 'laptop-hours (measured and fitted) × ' + fl.watts.value + ' W × ' + el.pencePerKwh + 'p/kWh (DESNZ non-domestic), rising with CPI', perYear: Y((i) => cap.perYear[i].laptopHours * 12 * fl.watts.value / 1000 * el.pencePerKwh / 100 * infl(i)) });
+  lines.push({ id: 'local-staff-time', side: 'local', label: 'Staff time on the same work: the AI does it', basis: 'assumption', why: 'the open models on the floor do the triage, screening, routing and extraction; the people who approve and confirm are on both sides and not counted', perYear: Y(() => 0) });
+  lines.push({ id: 'local-hardware', side: 'local', label: 'New hardware: none — the same laptops the corporate side runs Copilot on', basis: 'assumption', why: C.hardware && isStr(C.hardware.why) ? C.hardware.why : 'the same laptops on both sides', perYear: Y(() => 0) });
+  lines.push({ id: 'local-models', side: 'local', label: 'Model licences: Qwen2.5-1.5B-Instruct under Apache 2.0', basis: 'list-price', source: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct', checked: P.checked, perYear: Y(() => 0) });
   const t = tco(lines, years);
   if (!t.ok) return t;
-  return { ok: true, capacity: cap, tco: t, seats: seatsN, seatProduct: seat.product, apiModel: api.provider + ' ' + api.model, nodesBought: bought, warnings };
+  const line = (id) => t.lines.find((l) => l.id === id);
+  return {
+    ok: true, capacity: cap, tco: t, rates: { perIn: rates.perIn, perOut: rates.perOut }, corporate: ch.corporate,
+    seats: seatsN, seatProduct: seat.product, apiModel: api.provider + ' ' + api.model,
+    staffHoursPerMonth: r2(staffHours), hoursPerYear: r2(staffHours * 12), fte: Math.round((staffHours / ST.hoursPerFte.value) * 10) / 10, staffHoursByWork: byWork.map((b) => ({ id: b.id, hoursPerMonth: r2(b.hoursPerMonth) })),
+    aiCost: line('local-power').total, seatCost: line('cloud-seats').total,
+    aiVsSeats: line('local-power').total > 0 ? Math.round(line('cloud-seats').total / line('local-power').total) : null,
+    saving: t.total.difference, savingShare: t.total.cloud > 0 ? Math.round((t.total.difference / t.total.cloud) * 1000) / 1000 : null,
+    warnings,
+  };
+}
+
+/** sensitivity(m, scenarios) — what a CFO will push on. Each scenario sets one or more levers and re-runs the whole
+ *  plan. A lever's value is a number (an assumption) or the path of a figure in the prices ('wageMedian.value'), so a
+ *  sourced figure keeps its source. worst is the smallest saving across the scenarios. */
+export const LEVERS = ['timeSaved', 'wage', 'cpi', 'growth', 'watts'];
+const fromPrices = (P, v) => {
+  if (isNum(v)) return v;
+  if (!isStr(v)) return null;
+  let x = P;
+  for (const k of v.split('.')) { if (!isObj(x)) return null; x = x[k]; }
+  return isNum(x) ? x : null;
+};
+export function sensitivity(m, scenarios) {
+  if (!Array.isArray(scenarios)) return fail('sensitivity needs a list of scenarios');
+  const base = plan(m);
+  if (!base.ok) return base;
+  const rows = [];
+  for (const s of scenarios) {
+    if (!isObj(s) || !isStr(s.id) || !isObj(s.set) || Object.keys(s.set).length === 0) return fail('each scenario needs an id and at least one lever');
+    const v = {};
+    for (const [k, raw] of Object.entries(s.set)) {
+      if (!LEVERS.includes(k)) return fail(s.id + ': ' + k + ' is not a lever (' + LEVERS.join(', ') + ')');
+      v[k] = fromPrices(m.prices, raw);
+      if (v[k] === null) return fail(s.id + ': ' + k + ' must be a number or the path of a figure in the prices');
+    }
+    const C = { ...m.company }, P = { ...m.prices };
+    if ('timeSaved' in v) C.workloads = C.workloads.map((w) => ({ ...w, secondsSaved: w.secondsSaved * v.timeSaved }));
+    if ('growth' in v) C.growth = { ...C.growth, value: v.growth };
+    if ('watts' in v) C.floor = { ...C.floor, watts: { ...C.floor.watts, value: v.watts } };
+    if ('wage' in v) P.wage = { ...P.wage, value: v.wage };
+    if ('cpi' in v) P.cpi = { ...P.cpi, value: v.cpi };
+    const p = plan({ ...m, company: C, prices: P });
+    if (!p.ok) return fail(s.id + ': ' + p.why);
+    rows.push({ id: s.id, values: v, cloud: p.tco.total.cloud, local: p.tco.total.local, saving: p.saving, savingShare: p.savingShare, fte: p.fte, aiCost: p.aiCost, vsBase: r2(p.saving - base.saving) });
+  }
+  return { ok: true, base: { cloud: base.tco.total.cloud, local: base.tco.total.local, saving: base.saving, savingShare: base.savingShare, fte: base.fte, aiCost: base.aiCost }, rows, worst: rows.length ? Math.min(...rows.map((r) => r.saving)) : null };
 }
 
 /** seatShareBreakEven(m) — what has to be true: the share of knowledge workers who would otherwise get a seat above

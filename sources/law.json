@@ -84,7 +84,7 @@
     "quote": "the controller and the processor shall implement appropriate technical and organisational measures to ensure a level of security appropriate to the risk",
     "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679", "checked": "2026-09-29", "from": "2018-05-25", "appliesIf": "personalData",
     "status": { "local": "yours", "cloud": "shared", "saas": "shared" },
-    "note": { "local": "All of it is in-house: encrypted laptops, hardened core nodes, access control, the model supply chain (hash-pinned weights).", "cloud": "Split with the vendor under its terms.", "saas": "Split with the vendor under its terms." } },
+    "note": { "local": "All of it is in-house: encrypted laptops, the always-on machines that hold the desk and the receipts, access control, the model supply chain (hash-pinned weights).", "cloud": "Split with the vendor under its terms.", "saas": "Split with the vendor under its terms." } },
   { "id": "gdpr-35", "regime": "GDPR / UK GDPR", "ref": "Art 35(1); ICO list of high-risk processing", "title": "Data protection impact assessment",
     "quote": "ICO: “Innovative technology: processing involving the use of innovative technologies, or the novel application of existing technologies (including AI). A DPIA is required where this processing is combined with any of the criteria from the European guidelines.”",
     "url": "https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/when-do-we-need-to-do-a-dpia/", "checked": "2026-09-29", "from": "2018-05-25", "appliesIf": "personalData",

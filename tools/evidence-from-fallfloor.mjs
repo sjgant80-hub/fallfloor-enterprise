@@ -53,6 +53,34 @@ const evidence = {
   unplannedRestarts: (summary.faults && summary.faults.unplannedRestarts || []).length,
   finished: summary.finished,
 };
+// ── the data boundary, read from the code that ran at the pinned commit: every network path the floor can take ──
+// The claim on the page ("no prompt, no customer record, nothing goes to an AI vendor") stands only if this holds:
+// every fetch is to the page's own origin, the only import is the WebLLM runtime library, STUN is off by default
+// (LAN candidates only), no other channel exists, and no AI API host appears anywhere in the code.
+const AI_API = /api\.openai\.com|api\.anthropic\.com|generativelanguage\.googleapis\.com|aiplatform\.googleapis\.com|api\.mistral\.ai|api\.cohere\.(?:ai|com)|openrouter\.ai|api\.groq\.com|api\.together\.xyz|api-inference\.huggingface\.co|router\.huggingface\.co|openai\.azure\.com|bedrock-runtime/g;
+const floorCode = { 'runtime.js': await get('runtime.js'), 'index.html': await get('index.html') };
+const uniq = (a) => [...new Set(a)].sort();
+const fetchTargets = uniq(Object.values(floorCode).flatMap((t) => [...t.matchAll(/\bfetch\(\s*([^,)]+)/g)].map((m) => m[1].trim())));
+const importTargets = uniq(Object.values(floorCode).flatMap((t) => [...t.matchAll(/\bimport\(\s*([^)]+)\)/g)].map((m) => { const c = t.match(new RegExp('const ' + m[1].trim() + " = '([^']+)'")); return c ? c[1] : m[1].trim(); })));
+const boundary = {
+  readFrom: Object.keys(floorCode).map((f) => f + '@' + COMMIT.slice(0, 7)),
+  fetchTargets, importTargets,
+  stunOffByDefault: Object.values(floorCode).every((t) => /\bstun: false\b/.test(t)),
+  aiApiHosts: uniq(Object.values(floorCode).flatMap((t) => t.match(AI_API) || [])),
+  otherChannels: uniq(Object.values(floorCode).flatMap((t) => t.match(/new WebSocket|XMLHttpRequest|sendBeacon|new EventSource/g) || [])),
+};
+const ledgerPath = summary.ledgerPath || ('runs/' + RUN + '/ledger.json');
+const sameOrigin = (x) => /^'data\/' \+ job \+ '\.json'$/.test(x) || x === 'S.ledgerPath';
+const broken = [
+  ...fetchTargets.filter((x) => !sameOrigin(x) || /https?:/.test(x)).map((x) => 'a fetch to ' + x),
+  ...importTargets.filter((x) => !/^https:\/\/cdn\.jsdelivr\.net\/npm\/@mlc-ai\/web-llm@[\d.]+\/\+esm$/.test(x)).map((x) => 'an import of ' + x),
+  ...(boundary.stunOffByDefault ? [] : ['STUN on by default']),
+  ...boundary.aiApiHosts.map((h) => 'an AI API host in the code: ' + h),
+  ...boundary.otherChannels.map((c) => 'another channel: ' + c),
+  ...(/^runs\/[\w-]+\/ledger\.json$/.test(ledgerPath) ? [] : ['the ledger path ' + ledgerPath + ' is not on the page\'s own origin']),
+];
+if (broken.length) { console.error('DATA BOUNDARY BROKEN in fallfloor@' + COMMIT.slice(0, 7) + ':\n  ' + broken.join('\n  ')); process.exit(1); }
+evidence.boundary = boundary;
 const out = join(root, 'evidence', 'fallfloor.json');
 const text = JSON.stringify(evidence, null, 1) + '\n';
 if (process.argv.includes('--write')) { writeFileSync(out, text); console.log('wrote evidence/fallfloor.json from ' + REPO + '@' + COMMIT.slice(0, 7)); }

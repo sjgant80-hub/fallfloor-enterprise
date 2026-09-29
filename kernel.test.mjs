@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  BASES, SIDES, sourced, exVat, toGbp, apiCostPerItem, coreSecondsPerItem, capacity, tco, plan, seatShareBreakEven,
+  BASES, SIDES, sourced, exVat, toGbp, apiCostPerItem, floorRates, floorSeconds, capacity, tco, plan, seatShareBreakEven, CORPORATE_MODES, LEVERS, sensitivity,
   DEPLOYMENTS, STATUSES, obligations, DECISIONS, gateCase, board, verifyReceipt,
 } from './kernel.mjs';
 
@@ -61,56 +61,52 @@ test('money: VAT out, dollars to pounds, a token bill per item', () => {
   assert.equal(apiCostPerItem(1e6, 0, { inPerM: 2, outPerM: 0 }, 1e-9), 2e-9);
 });
 
-const CORE = { bandwidthGBs: 1200, weightsGB: 18, efficiency: 0.3, prefillTokPerSec: 300 };
-test('coreSecondsPerItem: read the prompt, then generate at a bandwidth-bound rate', () => {
-  const c = coreSecondsPerItem(600, 40, CORE);
-  assert.equal(c.decodeTokPerSec, 20);
-  assert.equal(c.seconds, 4);
-  assert.equal(coreSecondsPerItem(0, 0, CORE).seconds, 0);
-  assert.equal(coreSecondsPerItem(600, 40, { ...CORE, efficiency: 1 }).decodeTokPerSec, 1200 / 18);
-  assert.equal(coreSecondsPerItem(600, 40, { ...CORE, efficiency: 1.01 }), null);
-  for (const k of ['bandwidthGBs', 'weightsGB', 'efficiency', 'prefillTokPerSec']) { assert.equal(coreSecondsPerItem(1, 1, { ...CORE, [k]: 0 }), null, k); assert.equal(coreSecondsPerItem(1, 1, { ...CORE, [k]: 'x' }), null, k); }
-  assert.equal(coreSecondsPerItem(-1, 1, CORE), null);
-  assert.equal(coreSecondsPerItem(1, -1, CORE), null);
-  assert.equal(coreSecondsPerItem('1', 1, CORE), null);
-  assert.equal(coreSecondsPerItem(1, '1', CORE), null);
-  assert.equal(coreSecondsPerItem(1, 1, null), null);
+test('floorRates: per-token laptop seconds fitted to the measured workloads', () => {
+  const r = floorRates([{ tokensIn: 100, tokensOut: 0, seconds: 1 }, { tokensIn: 0, tokensOut: 10, seconds: 2 }]);
+  assert.deepEqual(r, { ok: true, perIn: 0.01, perOut: 0.2 });
+  const exact = floorRates([{ tokensIn: 100, tokensOut: 10, seconds: 3 }, { tokensIn: 200, tokensOut: 10, seconds: 4 }, { tokensIn: 50, tokensOut: 20, seconds: 4.5 }]);
+  assert.ok(Math.abs(exact.perIn - 0.01) < 1e-12 && Math.abs(exact.perOut - 0.2) < 1e-12);
+  assert.deepEqual(floorRates([{ tokensIn: 10, tokensOut: 1, seconds: 1 }, { tokensIn: 0, tokensOut: 2, seconds: 2 }]), { ok: true, perIn: 0, perOut: 1 });
+  assert.deepEqual(floorRates([{ tokensIn: 1, tokensOut: 0, seconds: 1 }, { tokensIn: 0, tokensOut: 1, seconds: 0 }]), { ok: true, perIn: 1, perOut: 0 });
+  assert.match(floorRates([{ tokensIn: 10, tokensOut: 1, seconds: 5 }, { tokensIn: 20, tokensOut: 2, seconds: 10 }]).why, /do not separate/);
+  assert.match(floorRates([{ tokensIn: 0, tokensOut: 0, seconds: 1 }, { tokensIn: 0, tokensOut: 0, seconds: 1 }]).why, /do not separate/);
+  assert.match(floorRates([{ tokensIn: 10, tokensOut: 1, seconds: 0 }, { tokensIn: 0, tokensOut: 1, seconds: 5 }]).why, /negative rate/);
+  assert.match(floorRates([{ tokensIn: 1, tokensOut: 0, seconds: 5 }, { tokensIn: 1, tokensOut: 1, seconds: 0 }]).why, /negative rate/);
+  assert.match(floorRates([{ tokensIn: 1, tokensOut: 1, seconds: 1 }]).why, /at least two/);
+  assert.match(floorRates('x').why, /at least two/);
+  for (const bad of [null, { tokensIn: -1, tokensOut: 1, seconds: 1 }, { tokensIn: 1, tokensOut: 'x', seconds: 1 }, { tokensIn: 1, tokensOut: 1, seconds: -1 }])
+    assert.match(floorRates([bad, { tokensIn: 1, tokensOut: 1, seconds: 1 }]).why, /each measured workload/);
+  const m = floorRates([{ tokensIn: 0, tokensOut: 0, seconds: 0 }, { tokensIn: 100, tokensOut: 0, seconds: 1 }, { tokensIn: 0, tokensOut: 10, seconds: 2 }]);
+  assert.deepEqual(m, { ok: true, perIn: 0.01, perOut: 0.2 });
+});
+
+test('floorSeconds: the planning estimate from the fitted rates', () => {
+  const R = { perIn: 0.01, perOut: 0.2 };
+  assert.equal(floorSeconds(1000, 100, R), 30);
+  assert.equal(floorSeconds(0, 0, R), 0);
+  for (const [i, o, r] of [[-1, 1, R], [1, -1, R], ['1', 1, R], [1, '1', R], [1, 1, null], [1, 1, { perIn: 'x', perOut: 1 }], [1, 1, { perIn: 1, perOut: 'x' }]]) assert.equal(floorSeconds(i, o, r), null);
 });
 
 const FLOOR = { laptops: 100, nodeShare: 0.5, hoursPerDay: 4, daysPerMonth: 20 };
-const CAPCORE = { ...CORE, hoursPerMonth: 100, targetUtil: 0.5, spare: 1 };
-const WL = [{ id: 'a', tier: 'laptop', perMonth: 3600, secondsPerItem: 10 }, { id: 'b', tier: 'core', perMonth: 900, tokensIn: 600, tokensOut: 40 }];
-test('capacity: laptop hours from measured seconds; core nodes N + spare; growth by year', () => {
-  const c = capacity({ workloads: WL, floor: FLOOR, core: CAPCORE, growth: 1, years: 2 });
+const WL = [{ id: 'a', perMonth: 3600, secondsPerItem: 10, basis: 'measured' }, { id: 'b', perMonth: 900, secondsPerItem: 4 }];
+test('capacity: laptop-hours of AI work on the floor the company already owns, by year', () => {
+  const c = capacity({ workloads: WL, floor: FLOOR, growth: 1, years: 2 });
   assert.equal(c.laptopHoursAvailable, 4000);
-  assert.equal(c.decodeTokPerSec, 20);
-  assert.deepEqual(c.perWorkload, [{ id: 'a', tier: 'laptop', secondsPerItem: 10, perMonth: 3600 }, { id: 'b', tier: 'core', secondsPerItem: 4, perMonth: 900 }]);
-  assert.deepEqual(c.perYear[0], { year: 1, laptopHours: 10, laptopUtil: 0.003, coreHours: 1, coreNodes: 2, floorOverloaded: false });
-  assert.deepEqual(c.perYear[1], { year: 2, laptopHours: 20, laptopUtil: 0.005, coreHours: 2, coreNodes: 2, floorOverloaded: false });
-  const big = capacity({ workloads: [{ id: 'b', tier: 'core', perMonth: 45000, tokensIn: 600, tokensOut: 40 }], floor: FLOOR, core: CAPCORE, growth: 0, years: 1 });
-  assert.deepEqual([big.perYear[0].coreHours, big.perYear[0].coreNodes], [50, 2]);
-  assert.equal(capacity({ workloads: [{ id: 'b', tier: 'core', perMonth: 45001, tokensIn: 600, tokensOut: 40 }], floor: FLOOR, core: CAPCORE, growth: 0, years: 1 }).perYear[0].coreNodes, 3);
-  assert.equal(capacity({ workloads: [{ id: 'a', tier: 'laptop', perMonth: 1, secondsPerItem: 1 }], floor: FLOOR, core: { ...CAPCORE, spare: 0 }, growth: 0, years: 1 }).perYear[0].coreNodes, 0);
-  assert.equal(capacity({ workloads: [{ id: 'a', tier: 'laptop', perMonth: 1, secondsPerItem: 1 }], floor: FLOOR, core: { ...CAPCORE, spare: 2 }, growth: 0, years: 1 }).perYear[0].coreNodes, 0);
-  assert.equal(capacity({ workloads: [{ id: 'a', tier: 'laptop', perMonth: 5, secondsPerItem: 0 }], floor: FLOOR, core: CAPCORE, growth: 0, years: 1 }).perYear[0].laptopHours, 0);
-  assert.equal(capacity({ workloads: [{ id: 'a', tier: 'laptop', perMonth: 0, secondsPerItem: 5 }], floor: { ...FLOOR, laptops: 0 }, core: CAPCORE, growth: 0, years: 1 }).perYear[0].laptopUtil, null);
-  const over = capacity({ workloads: [{ id: 'a', tier: 'laptop', perMonth: 1440001, secondsPerItem: 10 }], floor: FLOOR, core: CAPCORE, growth: 0, years: 1 });
-  assert.equal(over.perYear[0].floorOverloaded, true);
-  assert.equal(capacity({ workloads: [{ id: 'a', tier: 'laptop', perMonth: 1440000, secondsPerItem: 10 }], floor: FLOOR, core: CAPCORE, growth: 0, years: 1 }).perYear[0].floorOverloaded, false);
-  const none = capacity({ workloads: [{ id: 'a', tier: 'laptop', perMonth: 1, secondsPerItem: 36 }], floor: { ...FLOOR, laptops: 0 }, core: CAPCORE, growth: 0, years: 1 });
-  assert.deepEqual([none.perYear[0].laptopUtil, none.perYear[0].floorOverloaded], [null, true]);
-  assert.equal(capacity({ workloads: [{ id: 'a', tier: 'laptop', perMonth: 0, secondsPerItem: 36 }], floor: { ...FLOOR, laptops: 0 }, core: CAPCORE, growth: 0, years: 1 }).perYear[0].floorOverloaded, false);
+  assert.deepEqual(c.perWorkload, [{ id: 'a', perMonth: 3600, secondsPerItem: 10, basis: 'measured' }, { id: 'b', perMonth: 900, secondsPerItem: 4, basis: 'estimate' }]);
+  assert.deepEqual(c.perYear, [{ year: 1, laptopHours: 11, laptopUtil: 0.003, floorOverloaded: false }, { year: 2, laptopHours: 22, laptopUtil: 0.006, floorOverloaded: false }]);
+  assert.equal(capacity({ workloads: [{ id: 'a', perMonth: 1440001, secondsPerItem: 10 }], floor: FLOOR, growth: 0, years: 1 }).perYear[0].floorOverloaded, true);
+  assert.equal(capacity({ workloads: [{ id: 'a', perMonth: 1440000, secondsPerItem: 10 }], floor: FLOOR, growth: 0, years: 1 }).perYear[0].floorOverloaded, false);
+  assert.deepEqual(capacity({ workloads: [{ id: 'a', perMonth: 1, secondsPerItem: 36 }], floor: { ...FLOOR, laptops: 0 }, growth: 0, years: 1 }).perYear[0], { year: 1, laptopHours: 0.01, laptopUtil: null, floorOverloaded: true });
+  assert.equal(capacity({ workloads: [{ id: 'a', perMonth: 0, secondsPerItem: 36 }], floor: { ...FLOOR, laptops: 0 }, growth: 0, years: 1 }).perYear[0].floorOverloaded, false);
+  assert.equal(capacity({ workloads: [{ id: 'a', perMonth: 5, secondsPerItem: 0 }], floor: FLOOR, growth: 0, years: 1 }).perYear[0].laptopHours, 0);
   for (const [bad, re] of [
-    [{ workloads: [] }, /needs workloads/], [{ workloads: [{ id: 'a', tier: 'cloud', perMonth: 1 }] }, /tier/], [{ workloads: [{ id: 'a', tier: 'laptop', perMonth: -1, secondsPerItem: 1 }] }, /perMonth/],
-    [{ workloads: [{ tier: 'laptop', perMonth: 1, secondsPerItem: 1 }] }, /id/], [{ workloads: [null] }, /each workload/],
-    [{ workloads: [{ id: 'a', tier: 'laptop', perMonth: 1 }] }, /measured seconds/], [{ workloads: [{ id: 'a', tier: 'laptop', perMonth: 1, secondsPerItem: -1 }] }, /measured seconds/],
-    [{ workloads: [{ id: 'b', tier: 'core', perMonth: 1, tokensIn: 1 }] }, /tokensIn, tokensOut/],
+    [{ workloads: [] }, /needs workloads/], [{ workloads: [null] }, /each workload/], [{ workloads: [{ perMonth: 1, secondsPerItem: 1 }] }, /each workload/],
+    [{ workloads: [{ id: 'a', perMonth: -1, secondsPerItem: 1 }] }, /each workload/], [{ workloads: [{ id: 'a', perMonth: 1 }] }, /each workload/], [{ workloads: [{ id: 'a', perMonth: 1, secondsPerItem: -1 }] }, /each workload/], [{ workloads: [{ id: 'a', perMonth: 'x', secondsPerItem: 1 }] }, /each workload/],
     [{ floor: { ...FLOOR, nodeShare: 1.1 } }, /floor/], [{ floor: { ...FLOOR, laptops: -1 } }, /floor/], [{ floor: { ...FLOOR, hoursPerDay: 'x' } }, /floor/], [{ floor: null }, /floor/],
-    [{ core: { ...CAPCORE, hoursPerMonth: 0 } }, /core/], [{ core: { ...CAPCORE, targetUtil: 0 } }, /core/], [{ core: { ...CAPCORE, targetUtil: 1.01 } }, /core/], [{ core: { ...CAPCORE, spare: -1 } }, /core/], [{ core: { ...CAPCORE, spare: 0.5 } }, /core/], [{ core: null }, /core/], [{ core: { ...CAPCORE, hoursPerMonth: 'x' } }, /core/], [{ core: { ...CAPCORE, targetUtil: 'x' } }, /core/],
     [{ growth: -0.51 }, /growth/], [{ growth: 5.01 }, /growth/], [{ growth: 'x' }, /growth/], [{ years: 0 }, /years/], [{ years: 11 }, /years/], [{ years: 1.5 }, /years/],
-  ]) assert.match(capacity({ workloads: WL, floor: FLOOR, core: CAPCORE, growth: 0, years: 1, ...bad }).why, re, JSON.stringify(bad).slice(0, 60));
-  assert.equal(capacity({ workloads: WL, floor: FLOOR, core: { ...CAPCORE, targetUtil: 1 }, growth: -0.5, years: 10 }).ok, true);
-  assert.equal(capacity({ workloads: WL, floor: { ...FLOOR, nodeShare: 1 }, core: CAPCORE, growth: 5, years: 1 }).ok, true);
+  ]) assert.match(capacity({ workloads: WL, floor: FLOOR, growth: 0, years: 1, ...bad }).why, re, JSON.stringify(bad).slice(0, 60));
+  assert.equal(capacity({ workloads: WL, floor: { ...FLOOR, nodeShare: 1 }, growth: -0.5, years: 10 }).ok, true);
+  assert.equal(capacity({ workloads: WL, floor: FLOOR, growth: 5, years: 1 }).ok, true);
   assert.equal(capacity(null).ok, false);
 });
 
@@ -136,67 +132,134 @@ test('tco: sums by side and year, cumulative, break-even, and what share rests o
   for (const [lines, years] of [[[], 1], ['x', 1], [[L('a', 'local', 'estimate', [1])], 0], [[L('a', 'local', 'estimate', [1])], 1.5], [null, 1]]) assert.equal(tco(lines, years).why, 'tco(lines, years)');
 });
 
-test('plan: the modelled bank, end to end, from the committed inputs', () => {
-  const p = plan({ company: COMPANY, prices: PRICES, evidence: EVIDENCE });
+const base = { company: COMPANY, prices: PRICES, evidence: EVIDENCE };
+test('plan: Copilot on every desk vs the AI doing the work on the laptops already owned', () => {
+  const p = plan(base);
   assert.equal(p.ok, true);
-  assert.equal(p.seats, 1000);
-  assert.equal(p.apiModel, 'OpenAI gpt-5-mini');
-  assert.deepEqual(p.nodesBought, [7, 1, 1, 2, 8]);
-  assert.deepEqual(p.capacity.perYear.map((y) => y.coreNodes), [7, 8, 9, 11, 12]);
-  assert.equal(p.capacity.decodeTokPerSec, 23.33);
-  assert.deepEqual(p.tco.total, { local: 2073772.31, cloud: 2638201.7, difference: 564429.4 });
-  assert.equal(p.tco.breakEvenYear, 1);
+  assert.deepEqual([p.corporate, p.seats, p.apiModel], ['seats', 1000, 'OpenAI gpt-5-mini']);
   const line = (id) => p.tco.lines.find((l) => l.id === id);
-  assert.equal(line('cloud-seats').total, 1386000);
+  // seats: £23.10 ex VAT × 1,000 × 12, then CPI every year
   assert.equal(line('cloud-seats').perYear[0], 277200);
-  assert.equal(line('cloud-seats').basis, 'list-price');
-  assert.equal(line('local-core-nodes').perYear[0], 32077.5);
-  assert.equal(line('local-core-nodes').basis, 'list-price');
-  assert.equal(line('cloud-api-support-triage').basis, 'list-price');
-  assert.equal(line('cloud-api-support-replies').basis, 'estimate');
-  assert.equal(line('cloud-api-knowledge-assistant'), undefined);
-  assert.equal(line('local-laptops').total, 0);
+  assert.equal(line('cloud-seats').perYear[1], 285793.2);
+  assert.equal(line('cloud-seats').total, 1474637.44);
+  // people's time: support 60 s, screening 10 s on the 74% the model clears, HR 120 s, KYC 180 s; the assistant 0
+  assert.deepEqual(p.staffHoursByWork, [{ id: 'support', hoursPerMonth: 2500 }, { id: 'screening', hoursPerMonth: 822.22 }, { id: 'hr-routing', hoursPerMonth: 266.67 }, { id: 'kyc-extraction', hoursPerMonth: 1500 }, { id: 'knowledge-assistant', hoursPerMonth: 0 }]);
+  assert.equal(p.staffHoursPerMonth, 5088.89);
+  assert.equal(p.fte, 33.9);
+  assert.equal(p.hoursPerYear, 61066.67);
+  assert.equal(p.aiVsSeats, 867);
+  assert.equal(line('cloud-staff-time').perYear[0], 1009004.53);
+  assert.equal(line('cloud-staff-time').total, 7299481.97);
+  assert.equal(line('cloud-staff-time').basis, 'assumption');
+  assert.equal(line('local-staff-time').total, 0);
+  assert.equal(line('local-hardware').total, 0);
   assert.equal(line('local-models').total, 0);
+  assert.equal(line('local-team').total, line('cloud-team').total);
+  assert.equal(line('cloud-team').total, 1190819.21);
+  assert.deepEqual([line('local-compliance').total, line('cloud-compliance').total], [83837.12, 126395.2]);
+  assert.equal(line('local-power').total, 1701.74);
+  assert.equal(p.aiCost, 1701.74);
+  assert.equal(p.seatCost, 1474637.44);
+  assert.deepEqual(p.tco.total, { local: 1276358.06, cloud: 10091333.82, difference: 8814975.75 });
+  assert.equal(p.saving, 8814975.75);
+  assert.equal(p.savingShare, 0.874);
+  assert.deepEqual(p.tco.perYear[4], { year: 5, local: 266946.57, cloud: 2582697.61 });
+  assert.equal(p.tco.breakEvenYear, 1);
+  assert.equal(p.tco.lines.some((l) => l.id.startsWith('cloud-api-')), false);
+  assert.deepEqual(p.capacity.perYear.map((y) => y.laptopUtil), [0.169, 0.195, 0.224, 0.257, 0.296]);
+  assert.deepEqual(p.capacity.perWorkload.map((w) => [w.id, w.secondsPerItem, w.basis]), [['support', 18.06, 'measured'], ['screening', 4.58, 'measured'], ['hr-routing', 4.97, 'measured'], ['kyc-extraction', 34.93, 'estimate'], ['knowledge-assistant', 64.6, 'estimate']]);
+  assert.ok(Math.abs(p.rates.perIn - 0.010537976831231217) < 1e-12 && Math.abs(p.rates.perOut - 0.1275002757344542) < 1e-12);
   assert.deepEqual(p.warnings, []);
 });
 
+test('plan: "we\'ll automate it with a cloud API instead" — the seats stay, the work goes to a vendor', () => {
+  const q = plan({ ...base, choices: { corporate: 'seats+api' } });
+  assert.equal(q.corporate, 'seats+api');
+  assert.equal(q.tco.lines.some((l) => l.id === 'cloud-staff-time'), false);
+  assert.deepEqual(q.tco.lines.filter((l) => l.id.startsWith('cloud-api-')).map((l) => [l.id, l.basis]), [['cloud-api-support', 'list-price'], ['cloud-api-screening', 'list-price'], ['cloud-api-hr-routing', 'list-price'], ['cloud-api-kyc-extraction', 'estimate']]);
+  assert.deepEqual(q.tco.total, { local: 1276358.06, cloud: 2798864.37, difference: 1522506.3 });
+  const ent = plan({ ...base, choices: { corporate: 'seats+api', seat: 'claude-enterprise' } });
+  assert.ok(ent.tco.lines.find((l) => l.id === 'cloud-api-knowledge-assistant'));
+  assert.equal(plan({ ...base, choices: { corporate: 'seats', seat: 'claude-enterprise' } }).tco.lines.some((l) => l.id === 'cloud-api-knowledge-assistant'), false);
+  assert.match(plan({ ...base, choices: { corporate: 'cloud' } }).why, /seats or seats\+api/);
+});
+
 test('plan: choices change the answer the way they should', () => {
-  const base = { company: COMPANY, prices: PRICES, evidence: EVIDENCE };
   const half = plan({ ...base, choices: { seatShare: 0.5 } });
   assert.equal(half.seats, 500);
-  assert.equal(half.tco.lines.find((l) => l.id === 'cloud-seats').total, 693000);
+  assert.equal(half.tco.lines.find((l) => l.id === 'cloud-seats').total, 737318.72);
   const team = plan({ ...base, choices: { seat: 'claude-team' } });
   assert.deepEqual(team.warnings, ['Claude Team (standard seat) is sold for up to 150 seats; this company needs 1000.']);
   assert.equal(team.tco.lines.find((l) => l.id === 'cloud-seats').perYear[0], 180000);
-  const ent = plan({ ...base, choices: { seat: 'claude-enterprise' } });
-  assert.ok(ent.tco.lines.find((l) => l.id === 'cloud-api-knowledge-assistant'));
-  assert.equal(ent.tco.lines.find((l) => l.id === 'cloud-seats').perYear[0], 1000 * 20 * 0.75396 * 12);
-  assert.equal(plan({ ...base, choices: { seatShare: 0 } }).seats, 0);
   assert.deepEqual(plan({ ...base, choices: { seat: 'claude-team', seatShare: 0.15 } }).warnings, []);
   assert.equal(plan({ ...base, choices: { seat: 'claude-team', seatShare: 0.151 } }).warnings.length, 1);
-  assert.equal(plan({ ...base, choices: { seatShare: 1 } }).ok, true);
+  assert.equal(plan({ ...base, choices: { seatShare: 0 } }).seats, 0);
+  const flat = plan({ ...base, prices: { ...PRICES, cpi: { ...PRICES.cpi, value: 0 } } });
+  assert.equal(flat.tco.lines.find((l) => l.id === 'cloud-seats').total, 1386000);
+  assert.equal(plan({ ...base, prices: { ...PRICES, cpi: { value: -0.1 } } }).ok, true);
+  assert.equal(plan({ ...base, prices: { ...PRICES, cpi: { value: 0.5 } } }).ok, true);
+  const noScreenReview = plan({ ...base, company: { ...COMPANY, workloads: COMPANY.workloads.map((w) => ({ ...w, reviewedFrom: undefined })) } });
+  assert.equal(noScreenReview.staffHoursPerMonth, 5377.78);
+  // nothing on the corporate side: no share to report, never a division by zero
+  const nothing = plan({ ...base, choices: { seatShare: 0 }, company: { ...COMPANY, workloads: COMPANY.workloads.map((w) => ({ ...w, secondsSaved: 0 })), staff: { ...COMPANY.staff, cloud: [] }, compliance: { ...COMPANY.compliance, cloud: { ...COMPANY.compliance.cloud, daysYear1: 0, daysPerYear: 0 } } } });
+  assert.equal(nothing.tco.total.cloud, 0);
+  assert.equal(nothing.savingShare, null);
   for (const [ch, re] of [[{ seat: 'nope' }, /unknown seat/], [{ apiModel: 'nope' }, /unknown API/], [{ seatShare: 1.1 }, /seatShare/], [{ seatShare: -0.1 }, /seatShare/], [{ seatShare: 'x' }, /seatShare/]])
     assert.match(plan({ ...base, choices: ch }).why, re);
 });
 
-test('seatShareBreakEven: the seat coverage above which local-first costs less', () => {
-  const base = { company: COMPANY, prices: PRICES, evidence: EVIDENCE };
-  const b = seatShareBreakEven(base);
-  assert.deepEqual(b, { ok: true, share: 0.593, localAlwaysCheaper: false, cloudAlwaysCheaper: false });
-  const at = (s) => plan({ ...base, choices: { seatShare: s } }).tco.total;
-  assert.ok(at(0.6).local < at(0.6).cloud);
-  assert.ok(at(0.59).local > at(0.59).cloud);
-  const cheapLocal = seatShareBreakEven({ ...base, company: { ...COMPANY, staff: { ...COMPANY.staff, local: [] } } });
-  assert.equal(cheapLocal.localAlwaysCheaper, true);
-  assert.ok(cheapLocal.share <= 0);
-  const pricey = seatShareBreakEven({ ...base, prices: { ...PRICES, coreNode: { ...PRICES.coreNode, price: 5e7 } } });
-  assert.equal(pricey.cloudAlwaysCheaper, true);
+test('sensitivity: what a CFO will push on, each scenario re-run through the whole plan', () => {
+  assert.deepEqual(LEVERS, ['timeSaved', 'wage', 'cpi', 'growth', 'watts']);
+  const before = JSON.stringify(base);
+  const s = sensitivity(base, COMPANY.sensitivity.scenarios);
+  assert.equal(s.ok, true);
+  assert.equal(JSON.stringify(base), before, 'the scenarios never change the input');
+  assert.deepEqual(s.base, { cloud: 10091333.82, local: 1276358.06, saving: 8814975.75, savingShare: 0.874, fte: 33.9, aiCost: 1701.74 });
+  const row = (id) => s.rows.find((r) => r.id === id);
+  assert.deepEqual(s.rows.map((r) => [r.id, r.saving, r.savingShare, r.fte, r.aiCost, r.vsBase]), [
+    ['time-halved', 5165234.77, 0.802, 17, 1701.74, -3649740.98],
+    ['wage-median', 12812174.38, 0.909, 33.9, 1701.74, 3997198.63],
+    ['cpi-target', 8602143.44, 0.873, 33.9, 1659.8, -212832.31],
+    ['cpi-high', 9194223.77, 0.874, 33.9, 1776.48, 379248.02],
+    ['volume-flat', 6883605.98, 0.844, 33.9, 1251.37, -1931369.77],
+    ['watts-max', 8810437.79, 0.873, 33.9, 6239.71, -4537.96],
+    ['all-down', 4105153.76, 0.766, 17, 4488.55, -4709821.99],
+  ]);
+  assert.deepEqual(row('wage-median').values, { wage: 19.67 });
+  assert.deepEqual(row('all-down').values, { timeSaved: 0.5, cpi: 0.02, growth: 0, watts: 55 });
+  assert.deepEqual([row('cpi-high').cloud, row('cpi-high').local], [10519210.99, 1324987.22]);
+  assert.equal(s.worst, 4105153.76);
+  assert.deepEqual(sensitivity(base, []), { ok: true, base: s.base, rows: [], worst: null });
+  // a lever by number, or by the path of a sourced figure
+  assert.equal(sensitivity(base, [{ id: 'w', set: { wage: 19.67 } }]).rows[0].saving, 12812174.38);
+  assert.equal(sensitivity(base, [{ id: 'g', set: { growth: 'cpi.value' } }]).rows[0].values.growth, 0.031);
+  // no power, no ratio
+  assert.equal(plan({ ...base, company: { ...COMPANY, floor: { ...COMPANY.floor, watts: { value: 0 } } } }).aiVsSeats, null);
+  // refusals
+  assert.match(sensitivity(base, 'x').why, /list of scenarios/);
+  assert.match(sensitivity({}, []).why, /plan needs/);
+  for (const [sc, re] of [
+    [null, /an id and at least one lever/], [{ set: { cpi: 0.02 } }, /an id and at least one lever/], [{ id: 'a' }, /an id and at least one lever/],
+    [{ id: 'a', set: {} }, /an id and at least one lever/], [{ id: 'a', set: { seats: 2 } }, /a: seats is not a lever/],
+    [{ id: 'a', set: { wage: 'wageMedian' } }, /a: wage must be a number or the path/], [{ id: 'a', set: { wage: 'nope.value' } }, /a: wage must be/],
+    [{ id: 'a', set: { cpi: 'cpi.value.deeper' } }, /a: cpi must be/], [{ id: 'a', set: { cpi: '' } }, /a: cpi must be/], [{ id: 'a', set: { cpi: true } }, /a: cpi must be/],
+    [{ id: 'a', set: { cpi: NaN } }, /a: cpi must be/], [{ id: 'a', set: { timeSaved: -1 } }, /^a: support: seconds of staff time saved/], [{ id: 'a', set: { cpi: 0.9 } }, /^a: prices need cpi/],
+  ]) assert.match(sensitivity(base, [{ id: 'ok', set: { cpi: 0.02 } }, sc]).why, re);
+});
+
+
+test('seatShareBreakEven: with the staff time on the bill, local-first is cheaper at any seat coverage', () => {
+  assert.deepEqual(seatShareBreakEven(base), { ok: true, share: -4.978, localAlwaysCheaper: true, cloudAlwaysCheaper: false });
+  const api = seatShareBreakEven({ ...base, choices: { corporate: 'seats+api' } });
+  assert.deepEqual(api, { ok: true, share: -0.032, localAlwaysCheaper: true, cloudAlwaysCheaper: false });
+  const noCloudTeam = seatShareBreakEven({ ...base, choices: { corporate: 'seats+api' }, company: { ...COMPANY, staff: { ...COMPANY.staff, cloud: [] } } });
+  assert.equal(noCloudTeam.localAlwaysCheaper, false);
+  assert.ok(noCloudTeam.share > 0 && noCloudTeam.share < 1);
   const free = seatShareBreakEven({ ...base, prices: { ...PRICES, seats: PRICES.seats.map((s) => ({ ...s, price: 0 })) } });
   assert.deepEqual(free, { ok: true, share: null, why: 'seats add nothing to the corporate side' });
-  assert.equal(seatShareBreakEven({ ...base, choices: { seatShare: 0.2 } }).share, 0.593);
-  // exact ties: a one-person company whose only costs are one seat (cloud) and one compliance day (local)
-  const tiny = (localDays) => ({ ...base, company: { ...COMPANY, profile: { ...COMPANY.profile, knowledgeWorkers: 1 }, growth: { value: 0 }, workloads: [{ ...COMPANY.workloads[2], perMonth: 0 }],
-    staff: { onCost: COMPANY.staff.onCost, local: [], cloud: [] }, compliance: { dayRate: { value: 1386 }, local: { daysYear1: localDays, daysPerYear: 0, why: 'w' }, cloud: { daysYear1: 0, daysPerYear: 0, why: 'w' } } } });
+  const tiny = (localDays) => ({ ...base, choices: { corporate: 'seats+api' }, company: { ...COMPANY, profile: { ...COMPANY.profile, knowledgeWorkers: 1 }, growth: { value: 0 }, workloads: [{ ...COMPANY.workloads[0], perMonth: 0 }, { ...COMPANY.workloads[2], perMonth: 0 }],
+    staff: { onCost: COMPANY.staff.onCost, local: [], cloud: [] }, compliance: { dayRate: { value: 1386 }, local: { daysYear1: localDays, daysPerYear: 0, why: 'w' }, cloud: { daysYear1: 0, daysPerYear: 0, why: 'w' } } },
+    prices: { ...PRICES, cpi: { ...PRICES.cpi, value: 0 } } });
   assert.deepEqual(seatShareBreakEven(tiny(0)), { ok: true, share: 0, localAlwaysCheaper: true, cloudAlwaysCheaper: false });
   assert.deepEqual(seatShareBreakEven(tiny(1)), { ok: true, share: 1, localAlwaysCheaper: false, cloudAlwaysCheaper: false });
   assert.match(seatShareBreakEven({ ...base, choices: { seat: 'nope' } }).why, /unknown seat/);
@@ -205,68 +268,70 @@ test('seatShareBreakEven: the seat coverage above which local-first costs less',
 });
 
 test('plan: refuses what it cannot stand behind', () => {
-  const base = { company: COMPANY, prices: PRICES, evidence: EVIDENCE };
   const C = (patch) => ({ ...base, company: { ...COMPANY, ...patch } });
   const P = (patch) => ({ ...base, prices: { ...PRICES, ...patch } });
-  assert.match(plan({ ...base, evidence: { ...EVIDENCE, hr: {} } }).why, /hr-routing: its evidence \(hr\) is missing/);
-  assert.match(plan(C({ workloads: [{ ...COMPANY.workloads[0], tokens: 'guess' }] })).why, /measured or estimate/);
-  assert.match(plan(C({ workloads: [{ tokens: 'estimate' }] })).why, /needs an id/);
-  assert.match(plan(C({ workloads: 'x' })).why, /workloads/);
-  assert.match(plan(P({ fx: null })).why, /fx and vatRate/);
-  assert.match(plan(P({ vatRate: {} })).why, /fx and vatRate/);
-  assert.match(plan(P({ coreNode: null })).why, /core node/);
-  assert.match(plan(C({ core: { ...COMPANY.core, model: null } })).why, /core node/);
-  assert.match(plan(C({ profile: { ...COMPANY.profile, knowledgeWorkers: 'x' } })).why, /knowledgeWorkers/);
-  assert.match(plan(P({ seats: [{ ...PRICES.seats[0], currency: 'EUR' }] })).why, /seat price/);
-  assert.match(plan(C({ staff: { ...COMPANY.staff, onCost: { value: 0.9 } } })).why, /staff and salaries/);
-  assert.match(plan(C({ staff: { ...COMPANY.staff, local: [{ role: 'x', fte: 1, soc: '9999' }] } })).why, /local staff/);
-  assert.match(plan(C({ staff: { ...COMPANY.staff, cloud: [{ role: 'x', fte: -1, soc: '2134' }] } })).why, /cloud staff/);
-  assert.match(plan(P({ salaries: {} })).why, /staff and salaries/);
-  assert.match(plan(C({ compliance: { ...COMPANY.compliance, dayRate: { value: -1 } } })).why, /compliance/);
-  assert.match(plan(C({ compliance: { ...COMPANY.compliance, local: { daysYear1: 1 } } })).why, /local compliance days/);
-  assert.match(plan(C({ compliance: { ...COMPANY.compliance, cloud: { daysYear1: -1, daysPerYear: 1 } } })).why, /cloud compliance days/);
-  assert.match(plan(P({ coreNode: { ...PRICES.coreNode, currency: 'EUR' } })).why, /core node price/);
-  assert.match(plan(C({ core: { ...COMPANY.core, lifeYears: { value: 0 } } })).why, /lifeYears/);
-  assert.match(plan(P({ electricity: {} })).why, /electricity/);
-  assert.match(plan(P({ coreNode: { ...PRICES.coreNode, maxWatts: 'x' } })).why, /node power/);
-  assert.match(plan(C({ floor: { ...COMPANY.floor, nodeShare: { value: 2 } } })).why, /floor/);
-  assert.match(plan(C({ workloads: [{ ...COMPANY.workloads[3], tokensIn: undefined }] })).why, /tokensIn/);
   const need = 'plan needs company, prices and evidence';
   assert.equal(plan(null).why, need);
   assert.equal(plan({ company: COMPANY, prices: PRICES }).why, need);
   assert.equal(plan({ prices: PRICES, evidence: EVIDENCE }).why, need);
   assert.equal(plan({ company: COMPANY, evidence: EVIDENCE }).why, need);
+  assert.match(plan({ ...base, evidence: { ...EVIDENCE, hr: {} } }).why, /hr-routing: its evidence \(hr\) is missing/);
   for (const k of ['tokensIn', 'tokensOut', 'laptopSecondsPerItem']) assert.match(plan({ ...base, evidence: { ...EVIDENCE, hr: { ...EVIDENCE.hr, [k]: undefined } } }).why, /hr-routing: its evidence/, k);
+  assert.match(plan(C({ workloads: [{ ...COMPANY.workloads[0], tokens: 'guess' }] })).why, /measured or estimate/);
+  assert.match(plan(C({ workloads: [{ tokens: 'estimate', secondsSaved: 1 }] })).why, /needs an id/);
+  assert.match(plan(C({ workloads: [null] })).why, /needs an id/);
+  assert.match(plan(C({ workloads: [{ ...COMPANY.workloads[0], secondsSaved: -1 }] })).why, /seconds of staff time saved/);
+  assert.match(plan(C({ workloads: [{ ...COMPANY.workloads[0], secondsSaved: 'x' }] })).why, /seconds of staff time saved/);
+  assert.equal(plan(C({ workloads: COMPANY.workloads.map((w) => ({ ...w, secondsSaved: 0 })) })).tco.lines.find((l) => l.id === 'cloud-staff-time').total, 0);
+  assert.match(plan(C({ workloads: 'x' })).why, /workloads/);
+  assert.match(plan(C({ workloads: [COMPANY.workloads[0], COMPANY.workloads[3]] })).why, /at least two/);
+  assert.match(plan(C({ workloads: [...COMPANY.workloads.slice(0, 3), { ...COMPANY.workloads[3], tokensIn: undefined }] })).why, /needs tokensIn and tokensOut/);
+  assert.match(plan(P({ fx: null })).why, /fx and vatRate/);
+  assert.match(plan(P({ vatRate: {} })).why, /fx and vatRate/);
+  for (const cpi of [null, { value: 'x' }, { value: -0.11 }, { value: 0.51 }]) assert.match(plan(P({ cpi })).why, /cpi/);
+  for (const wage of [null, { value: 'x' }, { value: -1 }]) assert.match(plan(P({ wage })).why, /the wage/);
+  assert.equal(plan(P({ wage: { ...PRICES.wage, value: 0 } })).tco.lines.find((l) => l.id === 'cloud-staff-time').total, 0);
+  assert.match(plan(C({ profile: { ...COMPANY.profile, knowledgeWorkers: 'x' } })).why, /knowledgeWorkers/);
+  assert.match(plan(P({ seats: [{ ...PRICES.seats[0], currency: 'EUR' }] })).why, /seat price/);
   const S = COMPANY.staff;
-  assert.match(plan(C({ staff: null })).why, /staff and salaries/);
-  assert.match(plan(C({ staff: { ...S, onCost: null } })).why, /staff and salaries/);
-  assert.match(plan(C({ staff: { ...S, onCost: { value: 'x' } } })).why, /staff and salaries/);
+  assert.match(plan(C({ staff: null })).why, /staff on-cost/);
+  assert.match(plan(C({ staff: { ...S, onCost: null } })).why, /staff on-cost/);
+  assert.match(plan(C({ staff: { ...S, onCost: { value: 'x' } } })).why, /staff on-cost/);
+  assert.match(plan(C({ staff: { ...S, onCost: { value: 0.9 } } })).why, /staff on-cost/);
   assert.equal(plan(C({ staff: { ...S, onCost: { value: 1 } } })).ok, true);
+  for (const st of [null, { hoursPerFte: null }, { hoursPerFte: { value: 'x' } }, { hoursPerFte: { value: 0 } }]) assert.match(plan(C({ staffTime: st })).why, /hoursPerFte/);
+  assert.match(plan(C({ workloads: COMPANY.workloads.map((w) => ({ ...w, reviewedFrom: w.reviewedFrom ? 'nope' : undefined })) })).why, /still goes to a person/);
+  for (const k of ['items', 'caught', 'wronglyFlagged']) assert.match(plan({ ...base, evidence: { ...EVIDENCE, security: { ...EVIDENCE.security, [k]: 'x' } } }).why, /still goes to a person/, k);
+  assert.match(plan({ ...base, evidence: { ...EVIDENCE, security: { ...EVIDENCE.security, items: 0 } } }).why, /still goes to a person/);
+  assert.match(plan(P({ salaries: {} })).why, /salaries/);
   assert.match(plan(P({ salaries: { roles: { ...PRICES.salaries.roles, 2134: { median: 'x' } } } })).why, /local staff/);
   assert.match(plan(C({ staff: { ...S, local: [null] } })).why, /local staff/);
   assert.match(plan(C({ staff: { ...S, local: [{ role: 'x', fte: 'x', soc: '2134' }] } })).why, /local staff/);
-  const zeroFte = plan(C({ staff: { ...S, local: [{ role: 'Nobody', fte: 0, soc: '2134' }] } }));
-  assert.equal(zeroFte.tco.lines.find((l) => l.id === 'local-staff').total, 0);
+  assert.match(plan(C({ staff: { ...S, local: [{ role: 'x', fte: 1, soc: '9999' }] } })).why, /local staff/);
+  assert.match(plan(C({ staff: { ...S, cloud: [{ role: 'x', fte: -1, soc: '2134' }] } })).why, /cloud staff/);
+  assert.equal(plan(C({ staff: { ...S, local: [{ role: 'Nobody', fte: 0, soc: '2134' }] } })).tco.lines.find((l) => l.id === 'local-team').total, 0);
   const noCloudTeam = plan(C({ staff: { onCost: S.onCost, local: S.local } }));
-  assert.equal(noCloudTeam.tco.lines.find((l) => l.id === 'cloud-staff').total, 0);
-  assert.match(noCloudTeam.tco.lines.find((l) => l.id === 'cloud-staff').label, /^0 FTE \(\)$/);
+  assert.equal(noCloudTeam.tco.lines.find((l) => l.id === 'cloud-team').total, 0);
+  assert.match(noCloudTeam.tco.lines.find((l) => l.id === 'cloud-team').label, /: 0 FTE \(\)$/);
   const CP = COMPANY.compliance;
   assert.match(plan(C({ compliance: null })).why, /^compliance$/);
   assert.match(plan(C({ compliance: { ...CP, dayRate: null } })).why, /^compliance$/);
   assert.match(plan(C({ compliance: { ...CP, dayRate: { value: 'x' } } })).why, /^compliance$/);
+  assert.match(plan(C({ compliance: { ...CP, dayRate: { value: -1 } } })).why, /^compliance$/);
   assert.equal(plan(C({ compliance: { ...CP, dayRate: { value: 0 } } })).tco.lines.find((l) => l.id === 'local-compliance').total, 0);
   assert.match(plan(C({ compliance: { ...CP, local: null } })).why, /local compliance days/);
   assert.match(plan(C({ compliance: { ...CP, local: { daysYear1: 'x', daysPerYear: 1 } } })).why, /local compliance days/);
   assert.match(plan(C({ compliance: { ...CP, local: { daysYear1: 1, daysPerYear: 'x' } } })).why, /local compliance days/);
   assert.match(plan(C({ compliance: { ...CP, local: { daysYear1: 1, daysPerYear: -1 } } })).why, /local compliance days/);
-  const zeroDays = plan(C({ compliance: { ...CP, local: { daysYear1: 0, daysPerYear: 0, why: 'w' } } }));
-  assert.equal(zeroDays.tco.lines.find((l) => l.id === 'local-compliance').total, 0);
-  assert.match(plan(C({ core: { ...COMPANY.core, lifeYears: null } })).why, /lifeYears/);
-  assert.match(plan(C({ core: { ...COMPANY.core, lifeYears: { value: 1.5 } } })).why, /lifeYears/);
-  assert.deepEqual(plan(C({ core: { ...COMPANY.core, lifeYears: { value: 1 } } })).nodesBought, [7, 8, 9, 11, 12]);
-  assert.match(plan(P({ electricity: null })).why, /electricity/);
-  assert.match(plan(P({ laptopPower: null })).why, /electricity/);
-  assert.match(plan(P({ laptopPower: { wattsHigh: 'x' } })).why, /electricity/);
+  assert.match(plan(C({ compliance: { ...CP, cloud: { daysYear1: -1, daysPerYear: 1 } } })).why, /cloud compliance days/);
+  assert.equal(plan(C({ compliance: { ...CP, local: { daysYear1: 0, daysPerYear: 0, why: 'w' } } })).tco.lines.find((l) => l.id === 'local-compliance').total, 0);
+  assert.match(plan(P({ electricity: null })).why, /floor watts/);
+  assert.match(plan(P({ electricity: { pencePerKwh: 'x' } })).why, /floor watts/);
+  for (const watts of [null, { value: 'x' }, { value: -1 }]) assert.match(plan(C({ floor: { ...COMPANY.floor, watts } })).why, /floor watts/);
+  assert.equal(plan(C({ floor: { ...COMPANY.floor, watts: { value: 0 } } })).aiCost, 0);
+  assert.match(plan(C({ floor: null })).why, /floor/);
+  assert.match(plan(C({ floor: { ...COMPANY.floor, nodeShare: { value: 2 } } })).why, /floor/);
+  assert.equal(plan(C({ hardware: null })).tco.lines.find((l) => l.id === 'local-hardware').total, 0);
 });
 
 const WK = { flags: { personalData: true, interactsWithPublic: true, significantDecision: false, highRisk: false, euOutput: true } };
