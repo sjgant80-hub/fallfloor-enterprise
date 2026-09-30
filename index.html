@@ -124,7 +124,7 @@ We found more than 61,000 hours a year of repetitive work inside a 1,200-person 
   <div class="step">THE ECONOMICS · FIVE YEARS · CASH, NET OF VAT</div>
   <h2>Copilot on every desk, against the AI doing the work.</h2>
   <p class="sub">The same company, the same laptops, the same size of team running it. Seats, staff time, the team, compliance and power rise with CPI every year; the work grows with volume. Every line is sourced in section 1 and every input can be changed there.</p>
-  <div class="card"><div class="tw"><table class="vs" id="vsTable"><thead><tr><th></th><th class="n">Copilot on every desk</th><th class="n">Local-first</th></tr></thead><tbody></tbody></table></div></div>
+  <div class="card"><div class="tw"><table class="vs" id="vsTable"><thead><tr><th></th><th class="n">Copilot on every desk + rented SaaS</th><th class="n">Local-first</th></tr></thead><tbody></tbody></table></div></div>
   <div class="callout" id="freed"></div>
   <div class="callout" id="apiRoute"></div>
   <details><summary>Every line, with its basis and source</summary><div class="tw"><table id="costLines"><thead><tr><th>Side</th><th>Line</th><th>5-year total</th><th>Basis</th><th>Source</th></tr></thead><tbody></tbody></table></div>
@@ -1198,7 +1198,7 @@ function renderHero() {
   const hy = Math.floor(p.hoursPerYear / 1000) * 1000;
   $('heroH1').textContent = 'We found ' + (hy < p.hoursPerYear ? 'more than ' : '') + int(hy) + ' hours a year of repetitive work inside a ' + int(D.company.profile.employees) + '-person bank — and an architecture that takes it off the staff without new machines or an AI seat per head.';
   $('heroStats').innerHTML = [
-    [gbpM(p.saving) + ' less', 'over five years than Copilot on every desk — ' + pct(p.savingShare) + ' below it'],
+    [gbpM(p.saving) + ' less', 'over five years than Copilot on every desk and the rented back office — ' + pct(p.savingShare) + ' below it'],
     [Math.round(p.fte) + ' people\'s work back', int(p.hoursPerYear) + ' staff hours a year freed. Grow without hiring, or cut the bill. Your call.'],
     ['£0 new hardware', 'the laptops already on the desks do the work'],
     ['0 records out', D.design.dataClaim.claim],

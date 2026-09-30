@@ -11,7 +11,7 @@ A **reference design** for a **modelled** company — a UK digital bank with EU 
 
 You already own the computers. You already employ the people. Why rent an AI seat for every head? We build the AI into the work itself. Same machines, same workforce, no per-seat licence, and the software belongs to you.
 
-**Copilot on every desk: £10,887,740 over five years. Local-first on the laptops already owned: £1,570,065. £9,317,675 less (85.6%).**
+**Copilot on every desk and the rented back office: £10,887,740 over five years. Local-first on the laptops already owned: £1,570,065. £9,317,675 less (85.6%).**
 
 - **£7,299,482 of staff time freed** — 61,067 hours a year, 34 people's worth of work. Staff time freed, not a payroll cut. You get that many people's worth of work back. Grow without hiring, or cut the bill. Your call.
 - **The AI layer:** £1,474,637 of Copilot seats against £1,702 of modelled electricity (estimate: laptop-hours × 15 W × the DESNZ non-domestic rate) — 867× less.
@@ -21,7 +21,7 @@ You already own the computers. You already employ the people. Why rent an AI sea
 
 The modelled bank (1,200 staff, 1,000 knowledge workers, UK with EU customers), five years, cash, net of VAT. Seats, teams, compliance, staff time and power rise with ONS CPI (3.1%, https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/consumerpriceinflation/august2026); staff time is priced at the National Living Wage (£12.71 an hour, https://www.gov.uk/government/news/national-living-wage-increases-to-1271-per-hour) × 1.3 on-cost. Microsoft's 1 July 2026 update raised Microsoft 365 plan prices — from 5% (Microsoft 365 E5, US$57 to US$60) to 33% (Microsoft 365 F1, US$2.25 to US$3.00). Microsoft 365 Copilot is not among the plans in that price table: the Copilot seat on this page is Microsoft's current UK list price. (https://www.microsoft.com/en-us/licensing/news/2026-m365-packaging-pricing-updates)
 
-| | Copilot on every desk | Local-first |
+| | Copilot on every desk + rented SaaS | Local-first |
 |---|---|---|
 | Seat licences (1,000 × Microsoft 365 Copilot (enterprise)) | £1,474,637 | — |
 | Staff time on the repetitive work (33.9 people's worth) | £7,299,482 | £0 — the AI does it |

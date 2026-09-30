@@ -34,7 +34,7 @@ L.push('**' + h1 + '**');
 L.push('');
 L.push(data.design.pitch);
 L.push('');
-L.push('**Copilot on every desk: ' + gbp(p.tco.total.cloud) + ' over five years. Local-first on the laptops already owned: ' + gbp(p.tco.total.local) + '. ' + gbp(p.saving) + ' less (' + pct(p.savingShare) + ').**');
+L.push('**Copilot on every desk and the rented back office: ' + gbp(p.tco.total.cloud) + ' over five years. Local-first on the laptops already owned: ' + gbp(p.tco.total.local) + '. ' + gbp(p.saving) + ' less (' + pct(p.savingShare) + ').**');
 L.push('');
 L.push('- **' + gbp(line('cloud-staff-time').total) + ' of staff time freed** — ' + int(p.hoursPerYear) + ' hours a year, ' + Math.round(p.fte) + ' people\'s worth of work. ' + data.design.freed);
 L.push('- **The AI layer:** ' + gbp(p.seatCost) + ' of Copilot seats against ' + gbp(p.aiCost) + ' of modelled electricity (estimate: laptop-hours × ' + data.company.floor.watts.value + ' W × the DESNZ non-domestic rate) — ' + int(p.aiVsSeats) + '× less.');
@@ -44,7 +44,7 @@ L.push('- **' + data.design.dataClaim.claim + '** ' + data.design.dataClaim.how)
 L.push('');
 L.push('The modelled bank (' + int(data.company.profile.employees) + ' staff, ' + int(data.company.profile.knowledgeWorkers) + ' knowledge workers, UK with EU customers), five years, cash, net of VAT. Seats, teams, compliance, staff time and power rise with ONS CPI (' + pct(data.prices.cpi.value) + ', ' + data.prices.cpi.source + '); staff time is priced at the National Living Wage (£' + data.prices.wage.value + ' an hour, ' + data.prices.wage.source + ') × ' + data.company.staff.onCost.value + ' on-cost. ' + data.prices.risingCost.what + ' (' + data.prices.risingCost.source + ')');
 L.push('');
-L.push('| | Copilot on every desk | Local-first |');
+L.push('| | Copilot on every desk + rented SaaS | Local-first |');
 L.push('|---|---|---|');
 L.push('| Seat licences (' + p.seats.toLocaleString('en-GB') + ' × ' + p.seatProduct + ') | ' + gbp(line('cloud-seats').total) + ' | — |');
 L.push('| Staff time on the repetitive work (' + p.fte + ' people\'s worth) | ' + gbp(line('cloud-staff-time').total) + ' | ' + gbp(line('local-staff-time').total) + ' — the AI does it |');
