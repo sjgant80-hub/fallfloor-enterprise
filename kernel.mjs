@@ -3,6 +3,7 @@
 // CI mutation-gates it, and every number the page shows is computed here from sourced inputs.
 //
 //   sourced figures · capacity (the laptops already owned) · 5-year cost, both sides, every line with its basis ·
+//   the rented back office (SaaS) against the estate organs that replace it ·
 //   the compliance map (who holds which duty, on which stack) · the go/no-go board (a dual-map gate per decision,
 //   fed by fallfloor's receipted evidence).
 //
@@ -10,6 +11,7 @@
 // Division — ThunderStruck Service LLC — "From GEP Stabilization to Dual-Map Ethical Reasoning," Derivation v0.2.
 import { sha256, canon } from './hash.mjs';
 import { decide, seal, verifyReceipt } from './dualmap.mjs';
+import { DEPLOYMENTS, STATUSES, obligations } from './comply.mjs';
 
 const isStr = (v) => typeof v === 'string' && v.length > 0;
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -240,6 +242,39 @@ export function plan(m) {
     if (!isObj(d) || !isNum(d.daysYear1) || !isNum(d.daysPerYear) || d.daysYear1 < 0 || d.daysPerYear < 0) return fail(side + ' compliance days');
     lines.push({ id: side + '-compliance', side, label: 'Compliance work: ' + d.why, basis: 'assumption', why: d.daysYear1 + ' days in year 1, then ' + d.daysPerYear + ' a year, at ' + CP.dayRate.value + ' a day, rising with CPI', perYear: Y((i) => (i === 0 ? d.daysYear1 : d.daysPerYear) * CP.dayRate.value * infl(i)) });
   }
+  // ── the rented back office: SaaS rent on the corporate side; on the local-first side the estate organ that replaces
+  //    it, with rent paid until cut-over and a one-off hardening cost set by the organ's rung on the ladder ──
+  const saas = [];
+  if (C.saas !== undefined) {
+    const SA = C.saas, O = m.organs;
+    if (!isObj(SA) || !Array.isArray(SA.stack) || !isObj(SA.cutoverYear) || !Number.isInteger(SA.cutoverYear.value) || SA.cutoverYear.value < 1 || !isObj(SA.hardeningDays) || !isObj(SA.syncDays) || !isNum(SA.syncDays.value) || SA.syncDays.value < 0) return fail('company.saas: stack, cutoverYear, hardeningDays and syncDays');
+    if (!isObj(O) || !Array.isArray(O.functions)) return fail('the organ map (sources/organs.json) for the SaaS layer');
+    const cut = SA.cutoverYear.value, dayRate = CP.dayRate.value;
+    let replacedAny = false;
+    for (const s of SA.stack) {
+      if (!isObj(s) || !isStr(s.fn) || !isStr(s.rent) || !Number.isInteger(s.users) || s.users < 0) return fail('each SaaS line needs fn, rent and whole users');
+      const e = (P.saas || []).find((x) => isObj(x) && x.id === s.rent);
+      if (!e) return fail(s.fn + ': the prices have no subscription ' + s.rent);
+      const monthly = toGbp(exVat(e.price, e.vat, vatRate), e.currency, fx);
+      if (monthly === null) return fail(s.fn + ': ' + s.rent + ' cannot be priced in pounds');
+      const r = O.functions.find((x) => isObj(x) && x.fn === s.fn);
+      if (!r) return fail(s.fn + ': the organ map has no such function');
+      const rent = Y((i) => s.users * monthly * 12 * infl(i));
+      lines.push({ id: 'cloud-saas-' + s.fn, side: 'cloud', label: s.users + ' × ' + e.product + ' (' + e.per + '), rising with CPI', basis: 'list-price', source: e.source, checked: e.checked, perYear: rent });
+      if (r.replaced !== true) {
+        lines.push({ id: 'local-saas-' + s.fn, side: 'local', label: e.product + ' kept — ' + (isStr(r.why) ? r.why : 'no estate organ replaces it'), basis: 'list-price', source: e.source, checked: e.checked, perYear: rent });
+        saas.push({ fn: s.fn, product: e.product, users: s.users, replaced: false, organ: null, tier: null });
+        continue;
+      }
+      const days = SA.hardeningDays[r.tier];
+      if (!isNum(days) || days < 0) return fail(s.fn + ': hardening days for a ' + String(r.tier) + ' organ');
+      replacedAny = true;
+      lines.push({ id: 'local-saas-' + s.fn, side: 'local', label: e.product + ' rent until ' + (r.organName || r.organ) + ' takes over in year ' + cut, basis: 'list-price', source: e.source, checked: e.checked, perYear: Y((i) => (i < cut - 1 ? rent[i] : 0)) });
+      lines.push({ id: 'local-harden-' + s.fn, side: 'local', label: 'Hardening ' + (r.organName || r.organ) + ' for the bank (' + days + ' days, organ ' + r.tier + ' on the ladder)', basis: 'assumption', why: days + ' engineering days for a ' + r.tier + ' organ at ' + dayRate + ' a day, in year 1: its named gaps, single sign-on, the bank\'s connectors and the migration', perYear: Y((i) => (i === 0 ? days * dayRate : 0)) });
+      saas.push({ fn: s.fn, product: e.product, users: s.users, replaced: true, organ: r.organ, organName: r.organName || r.organ, tier: r.tier });
+    }
+    if (replacedAny) lines.push({ id: 'local-saas-sync', side: 'local', label: 'Shared records on the company\'s own mesh for the replaced apps (' + SA.syncDays.value + ' days, once)', basis: 'assumption', why: SA.syncDays.value + ' engineering days at ' + dayRate + ' a day in year 1: the estate apps keep each browser\'s records locally today, so a shared, signed record across the team is built once for all of them', perYear: Y((i) => (i === 0 ? SA.syncDays.value * dayRate : 0)) });
+  }
   // ── the local-first side: the AI does the work, on the machines already owned; its extra cost is the power ──
   const el = P.electricity;
   if (!isObj(el) || !isNum(el.pencePerKwh) || !isObj(fl.watts) || !isNum(fl.watts.value) || fl.watts.value < 0) return fail('electricity and the floor watts');
@@ -256,6 +291,7 @@ export function plan(m) {
     staffHoursPerMonth: r2(staffHours), hoursPerYear: r2(staffHours * 12), fte: Math.round((staffHours / ST.hoursPerFte.value) * 10) / 10, staffHoursByWork: byWork.map((b) => ({ id: b.id, hoursPerMonth: r2(b.hoursPerMonth) })),
     aiCost: line('local-power').total, seatCost: line('cloud-seats').total,
     aiVsSeats: line('local-power').total > 0 ? Math.round(line('cloud-seats').total / line('local-power').total) : null,
+    saas: { lines: saas, rent: r2(t.lines.filter((l) => l.id.startsWith('cloud-saas-')).reduce((x, l) => x + l.total, 0)), local: r2(t.lines.filter((l) => l.id.startsWith('local-saas-') || l.id.startsWith('local-harden-')).reduce((x, l) => x + l.total, 0)) },
     saving: t.total.difference, savingShare: t.total.cloud > 0 ? Math.round((t.total.difference / t.total.cloud) * 1000) / 1000 : null,
     warnings,
   };
@@ -264,7 +300,7 @@ export function plan(m) {
 /** sensitivity(m, scenarios) — what a CFO will push on. Each scenario sets one or more levers and re-runs the whole
  *  plan. A lever's value is a number (an assumption) or the path of a figure in the prices ('wageMedian.value'), so a
  *  sourced figure keeps its source. worst is the smallest saving across the scenarios. */
-export const LEVERS = ['timeSaved', 'wage', 'cpi', 'growth', 'watts'];
+export const LEVERS = ['timeSaved', 'wage', 'cpi', 'growth', 'watts', 'cutover', 'hardening'];
 const fromPrices = (P, v) => {
   if (isNum(v)) return v;
   if (!isStr(v)) return null;
@@ -291,6 +327,13 @@ export function sensitivity(m, scenarios) {
     if ('watts' in v) C.floor = { ...C.floor, watts: { ...C.floor.watts, value: v.watts } };
     if ('wage' in v) P.wage = { ...P.wage, value: v.wage };
     if ('cpi' in v) P.cpi = { ...P.cpi, value: v.cpi };
+    if ('cutover' in v || 'hardening' in v) {
+      if (!isObj(C.saas)) return fail(s.id + ': the cutover and hardening levers need company.saas');   // a passing base plan has already checked the rest
+      const HD = C.saas.hardeningDays;
+      C.saas = { ...C.saas, cutoverYear: 'cutover' in v ? { ...C.saas.cutoverYear, value: v.cutover } : C.saas.cutoverYear,
+        hardeningDays: 'hardening' in v ? Object.fromEntries(Object.entries(HD).map(([k, d]) => [k, isNum(d) ? d * v.hardening : d])) : HD,
+        syncDays: 'hardening' in v && isObj(C.saas.syncDays) ? { ...C.saas.syncDays, value: C.saas.syncDays.value * v.hardening } : C.saas.syncDays };
+    }
     const p = plan({ ...m, company: C, prices: P });
     if (!p.ok) return fail(s.id + ': ' + p.why);
     rows.push({ id: s.id, values: v, cloud: p.tco.total.cloud, local: p.tco.total.local, saving: p.saving, savingShare: p.savingShare, fte: p.fte, aiCost: p.aiCost, vsBase: r2(p.saving - base.saving) });
@@ -314,31 +357,9 @@ export function seatShareBreakEven(m) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════════════════════════
-// THE COMPLIANCE MAP — for one workload on one stack: which duties apply, from when, and what the stack does to them
+// THE COMPLIANCE MAP — obligations(), DEPLOYMENTS and STATUSES are the estate compliance kernel (comply.mjs), pulled
+// verbatim from fall-euaiact with its tests and law (law/law.json); CI checks the copy against the pinned original.
 // ══════════════════════════════════════════════════════════════════════════════════════════════════
-export const DEPLOYMENTS = ['local', 'cloud', 'saas'];
-export const STATUSES = ['removed', 'eased', 'yours', 'shared', 'unchanged'];
-const CONDITIONS = ['always', 'personalData', 'interactsWithPublic', 'significantDecision', 'highRisk', 'creditScoring', 'euOutput', 'providerAbroad', 'trainsOnPersonalData'];
-
-/** obligations(workload, deployment, duties, ctx) — ctx: { asOf: 'YYYY-MM-DD', providerAbroad: bool }. */
-export function obligations(workload, deployment, duties, ctx) {
-  if (!isObj(workload) || !isObj(workload.flags)) return fail('a workload with flags');
-  if (!DEPLOYMENTS.includes(deployment)) return fail('deployment must be local, cloud or saas');
-  if (!Array.isArray(duties)) return fail('duties must be a list');
-  if (!isObj(ctx) || !DATE.test(ctx.asOf || '')) return fail('ctx.asOf must be a date');
-  const f = { ...workload.flags, always: true, providerAbroad: ctx.providerAbroad === true };   // shown on every stack, so the local column can say 'removed'
-  const items = [];
-  const counts = Object.fromEntries(STATUSES.map((s) => [s, 0]));
-  for (const d of duties) {
-    if (!isObj(d) || !isStr(d.id) || !CONDITIONS.includes(d.appliesIf) || !isObj(d.status) || !STATUSES.includes(d.status[deployment]) || !DATE.test(d.from || '') || !HTTPS.test(d.url || '') || !DATE.test(d.checked || '')) return fail('duty ' + String(d && d.id) + ' is malformed (condition, status per stack, from, https url, checked)');
-    if (f[d.appliesIf] !== true) continue;
-    const status = d.status[deployment];
-    counts[status]++;
-    items.push({ id: d.id, ref: d.ref, title: d.title, status, inForce: d.from <= ctx.asOf, from: d.from, note: isObj(d.note) ? d.note[deployment] : '', url: d.url, checked: d.checked });
-  }
-  const role = deployment === 'saas' ? 'deployer (the vendor is the provider of its assistant)' : 'provider and deployer (the company puts its own AI system into service)';
-  return { ok: true, deployment, role, items, counts, applying: items.length };
-}
 
 // ══════════════════════════════════════════════════════════════════════════════════════════════════
 // THE GO / NO-GO BOARD — each deployment decision is a dual-map case built from fallfloor's receipted evidence.
@@ -414,4 +435,4 @@ export function board(ev, policy, createdAt) {
   return { ok: true, rows, tally, boardHash: sha256(canon(rows.map((r) => r.receipt.receiptHash))).hash };
 }
 
-export { verifyReceipt, decide };
+export { verifyReceipt, decide, DEPLOYMENTS, STATUSES, obligations };

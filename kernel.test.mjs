@@ -7,7 +7,7 @@ import {
 } from './kernel.mjs';
 
 const J = (f) => JSON.parse(readFileSync(new URL('./' + f, import.meta.url), 'utf8'));
-const COMPANY = J('data/company.json'), PRICES = J('sources/prices.json'), EVIDENCE = J('evidence/fallfloor.json'), LAW = J('sources/law.json');
+const COMPANY = J('data/company.json'), PRICES = J('sources/prices.json'), EVIDENCE = J('evidence/fallfloor.json'), LAW = J('law/law.json'), ORGANS = J('sources/organs.json');
 
 test('sourced: every figure says where it came from', () => {
   assert.deepEqual(BASES, ['list-price', 'measured', 'estimate', 'assumption']);
@@ -132,9 +132,12 @@ test('tco: sums by side and year, cumulative, break-even, and what share rests o
   for (const [lines, years] of [[[], 1], ['x', 1], [[L('a', 'local', 'estimate', [1])], 0], [[L('a', 'local', 'estimate', [1])], 1.5], [null, 1]]) assert.equal(tco(lines, years).why, 'tco(lines, years)');
 });
 
-const base = { company: COMPANY, prices: PRICES, evidence: EVIDENCE };
+const base = { company: COMPANY, prices: PRICES, evidence: EVIDENCE, organs: ORGANS };
+// the core model — seats, staff time, team, compliance and power — before the rented back office is added
+const CORE_CO = { ...COMPANY, saas: undefined };
+const core = { ...base, company: CORE_CO };
 test('plan: Copilot on every desk vs the AI doing the work on the laptops already owned', () => {
-  const p = plan(base);
+  const p = plan(core);
   assert.equal(p.ok, true);
   assert.deepEqual([p.corporate, p.seats, p.apiModel], ['seats', 1000, 'OpenAI gpt-5-mini']);
   const line = (id) => p.tco.lines.find((l) => l.id === id);
@@ -173,110 +176,177 @@ test('plan: Copilot on every desk vs the AI doing the work on the laptops alread
 });
 
 test('plan: "we\'ll automate it with a cloud API instead" — the seats stay, the work goes to a vendor', () => {
-  const q = plan({ ...base, choices: { corporate: 'seats+api' } });
+  const q = plan({ ...core, choices: { corporate: 'seats+api' } });
   assert.equal(q.corporate, 'seats+api');
   assert.equal(q.tco.lines.some((l) => l.id === 'cloud-staff-time'), false);
   assert.deepEqual(q.tco.lines.filter((l) => l.id.startsWith('cloud-api-')).map((l) => [l.id, l.basis]), [['cloud-api-support', 'list-price'], ['cloud-api-screening', 'list-price'], ['cloud-api-hr-routing', 'list-price'], ['cloud-api-kyc-extraction', 'estimate']]);
   assert.deepEqual(q.tco.total, { local: 1276358.06, cloud: 2798864.37, difference: 1522506.3 });
-  const ent = plan({ ...base, choices: { corporate: 'seats+api', seat: 'claude-enterprise' } });
+  const ent = plan({ ...core, choices: { corporate: 'seats+api', seat: 'claude-enterprise' } });
   assert.ok(ent.tco.lines.find((l) => l.id === 'cloud-api-knowledge-assistant'));
-  assert.equal(plan({ ...base, choices: { corporate: 'seats', seat: 'claude-enterprise' } }).tco.lines.some((l) => l.id === 'cloud-api-knowledge-assistant'), false);
-  assert.match(plan({ ...base, choices: { corporate: 'cloud' } }).why, /seats or seats\+api/);
+  assert.equal(plan({ ...core, choices: { corporate: 'seats', seat: 'claude-enterprise' } }).tco.lines.some((l) => l.id === 'cloud-api-knowledge-assistant'), false);
+  assert.match(plan({ ...core, choices: { corporate: 'cloud' } }).why, /seats or seats\+api/);
 });
 
 test('plan: choices change the answer the way they should', () => {
-  const half = plan({ ...base, choices: { seatShare: 0.5 } });
+  const half = plan({ ...core, choices: { seatShare: 0.5 } });
   assert.equal(half.seats, 500);
   assert.equal(half.tco.lines.find((l) => l.id === 'cloud-seats').total, 737318.72);
-  const team = plan({ ...base, choices: { seat: 'claude-team' } });
+  const team = plan({ ...core, choices: { seat: 'claude-team' } });
   assert.deepEqual(team.warnings, ['Claude Team (standard seat) is sold for up to 150 seats; this company needs 1000.']);
   assert.equal(team.tco.lines.find((l) => l.id === 'cloud-seats').perYear[0], 180000);
-  assert.deepEqual(plan({ ...base, choices: { seat: 'claude-team', seatShare: 0.15 } }).warnings, []);
-  assert.equal(plan({ ...base, choices: { seat: 'claude-team', seatShare: 0.151 } }).warnings.length, 1);
-  assert.equal(plan({ ...base, choices: { seatShare: 0 } }).seats, 0);
-  const flat = plan({ ...base, prices: { ...PRICES, cpi: { ...PRICES.cpi, value: 0 } } });
+  assert.deepEqual(plan({ ...core, choices: { seat: 'claude-team', seatShare: 0.15 } }).warnings, []);
+  assert.equal(plan({ ...core, choices: { seat: 'claude-team', seatShare: 0.151 } }).warnings.length, 1);
+  assert.equal(plan({ ...core, choices: { seatShare: 0 } }).seats, 0);
+  const flat = plan({ ...core, prices: { ...PRICES, cpi: { ...PRICES.cpi, value: 0 } } });
   assert.equal(flat.tco.lines.find((l) => l.id === 'cloud-seats').total, 1386000);
-  assert.equal(plan({ ...base, prices: { ...PRICES, cpi: { value: -0.1 } } }).ok, true);
-  assert.equal(plan({ ...base, prices: { ...PRICES, cpi: { value: 0.5 } } }).ok, true);
-  const noScreenReview = plan({ ...base, company: { ...COMPANY, workloads: COMPANY.workloads.map((w) => ({ ...w, reviewedFrom: undefined })) } });
+  assert.equal(plan({ ...core, prices: { ...PRICES, cpi: { value: -0.1 } } }).ok, true);
+  assert.equal(plan({ ...core, prices: { ...PRICES, cpi: { value: 0.5 } } }).ok, true);
+  const noScreenReview = plan({ ...core, company: { ...CORE_CO, workloads: COMPANY.workloads.map((w) => ({ ...w, reviewedFrom: undefined })) } });
   assert.equal(noScreenReview.staffHoursPerMonth, 5377.78);
   // nothing on the corporate side: no share to report, never a division by zero
-  const nothing = plan({ ...base, choices: { seatShare: 0 }, company: { ...COMPANY, workloads: COMPANY.workloads.map((w) => ({ ...w, secondsSaved: 0 })), staff: { ...COMPANY.staff, cloud: [] }, compliance: { ...COMPANY.compliance, cloud: { ...COMPANY.compliance.cloud, daysYear1: 0, daysPerYear: 0 } } } });
+  const nothing = plan({ ...core, choices: { seatShare: 0 }, company: { ...CORE_CO, workloads: COMPANY.workloads.map((w) => ({ ...w, secondsSaved: 0 })), staff: { ...COMPANY.staff, cloud: [] }, compliance: { ...COMPANY.compliance, cloud: { ...COMPANY.compliance.cloud, daysYear1: 0, daysPerYear: 0 } } } });
   assert.equal(nothing.tco.total.cloud, 0);
   assert.equal(nothing.savingShare, null);
   for (const [ch, re] of [[{ seat: 'nope' }, /unknown seat/], [{ apiModel: 'nope' }, /unknown API/], [{ seatShare: 1.1 }, /seatShare/], [{ seatShare: -0.1 }, /seatShare/], [{ seatShare: 'x' }, /seatShare/]])
-    assert.match(plan({ ...base, choices: ch }).why, re);
+    assert.match(plan({ ...core, choices: ch }).why, re);
+});
+
+test('plan: the rented back office against the estate organs that replace it', () => {
+  const p = plan(base);
+  assert.equal(p.ok, true);
+  const line = (id) => p.tco.lines.find((l) => l.id === id);
+  // Salesforce Pro Suite £80 × 100 users × 12, rising with CPI; Dynamics 365 Finance £161.50 × 20; HR £103.80 × 12
+  assert.deepEqual(line('cloud-saas-crm').perYear, [96000, 98976, 102044.26, 105207.63, 108469.06]);
+  assert.equal(line('cloud-saas-crm').basis, 'list-price');
+  assert.equal(line('cloud-saas-finance').total, 206193.89);
+  assert.equal(line('cloud-saas-hr').total, 79515.51);
+  // local-first pays the rent in year 1 while each organ is hardened, then the organ takes over
+  assert.deepEqual(line('local-saas-crm').perYear, [96000, 0, 0, 0, 0]);
+  assert.deepEqual(line('local-saas-hr').perYear, [14947.2, 0, 0, 0, 0]);
+  assert.deepEqual(line('local-harden-crm').perYear, [32000, 0, 0, 0, 0]);   // a Proven organ: 40 days at £800
+  assert.equal(line('local-harden-crm').basis, 'assumption');
+  assert.equal(line('local-harden-crm').label, 'Hardening FallCRM Elite for the bank (40 days, organ proven on the ladder)');
+  assert.deepEqual(line('local-saas-sync').perYear, [48000, 0, 0, 0, 0]);
+  assert.deepEqual(p.saas, { lines: [
+    { fn: 'crm', product: 'Salesforce Pro Suite', users: 100, replaced: true, organ: 'fallforce', organName: 'FallCRM Elite', tier: 'proven' },
+    { fn: 'finance', product: 'Dynamics 365 Finance', users: 20, replaced: true, organ: 'fallledger', organName: 'FallLedger', tier: 'proven' },
+    { fn: 'hr', product: 'Dynamics 365 Human Resources', users: 12, replaced: true, organ: 'fallhr', organName: 'FallHR', tier: 'proven' },
+  ], rent: 796406.35, local: 293707.2 });
+  assert.deepEqual(p.tco.total, { local: 1570065.26, cloud: 10887740.17, difference: 9317674.91 });
+  assert.deepEqual([p.saving, p.savingShare], [9317674.91, 0.856]);
+  // a kept function pays the same rent on both sides; a later cut-over and a lower rung cost more
+  const kept = plan({ ...base, organs: { ...ORGANS, functions: ORGANS.functions.map((f) => (f.fn === 'hr' ? { fn: 'hr', replaced: false, why: 'no organ' } : f)) } });
+  assert.deepEqual(kept.tco.lines.find((l) => l.id === 'local-saas-hr').perYear, kept.tco.lines.find((l) => l.id === 'cloud-saas-hr').perYear);
+  assert.equal(kept.tco.lines.find((l) => l.id === 'local-saas-hr').label, 'Dynamics 365 Human Resources kept — no organ');
+  assert.equal(kept.tco.lines.some((l) => l.id === 'local-harden-hr'), false);
+  assert.deepEqual(kept.saas.lines[2], { fn: 'hr', product: 'Dynamics 365 Human Resources', users: 12, replaced: false, organ: null, tier: null });
+  assert.match(plan({ ...base, organs: { functions: [{ fn: 'crm', replaced: false }, ...ORGANS.functions.slice(1)] } }).tco.lines.find((l) => l.id === 'local-saas-crm').label, /kept — no estate organ replaces it$/);
+  const onlyKept = plan({ ...base, organs: { functions: ORGANS.functions.map((f) => ({ fn: f.fn, replaced: false, why: 'x' })) } });
+  assert.equal(onlyKept.tco.lines.some((l) => l.id === 'local-saas-sync'), false, 'no replaced app, no shared records to build');
+  const works = plan({ ...base, organs: { ...ORGANS, functions: ORGANS.functions.map((f) => (f.fn === 'crm' ? { ...f, tier: 'works', organName: undefined } : f)) } });
+  assert.deepEqual(works.tco.lines.find((l) => l.id === 'local-harden-crm').perYear, [48000, 0, 0, 0, 0]);
+  assert.match(works.tco.lines.find((l) => l.id === 'local-saas-crm').label, /until fallforce takes over in year 2/);
+  const late = plan({ ...base, company: { ...COMPANY, saas: { ...COMPANY.saas, cutoverYear: { value: 3 } } } });
+  assert.deepEqual(late.tco.lines.find((l) => l.id === 'local-saas-crm').perYear, [96000, 98976, 0, 0, 0]);
+  const first = plan({ ...base, company: { ...COMPANY, saas: { ...COMPANY.saas, cutoverYear: { value: 1 } } } });
+  assert.deepEqual(first.tco.lines.find((l) => l.id === 'local-saas-crm').perYear, [0, 0, 0, 0, 0]);
+  assert.equal(plan({ ...base, company: { ...COMPANY, saas: { ...COMPANY.saas, syncDays: { value: 0 }, stack: [{ ...COMPANY.saas.stack[0], users: 0 }] } } }).saas.rent, 0);
+  // refusals
+  const saasCo = (o) => ({ ...base, company: { ...COMPANY, saas: { ...COMPANY.saas, ...o } } });
+  for (const [m, re] of [
+    [{ ...base, company: { ...COMPANY, saas: null } }, /company.saas/], [saasCo({ stack: 'x' }), /company.saas/], [saasCo({ cutoverYear: null }), /company.saas/],
+    [saasCo({ cutoverYear: { value: 0 } }), /company.saas/], [saasCo({ cutoverYear: { value: 1.5 } }), /company.saas/], [saasCo({ hardeningDays: null }), /company.saas/],
+    [saasCo({ syncDays: null }), /company.saas/], [saasCo({ syncDays: { value: -1 } }), /company.saas/], [saasCo({ syncDays: { value: 'x' } }), /company.saas/],
+    [{ ...base, organs: undefined }, /the organ map/], [{ ...base, organs: { functions: {} } }, /the organ map/],
+    [saasCo({ stack: [null] }), /each SaaS line needs fn, rent and whole users/], [saasCo({ stack: [{ fn: 'crm', rent: 'x' }] }), /each SaaS line needs/], [saasCo({ stack: [{ fn: '', rent: 'x', users: 1 }] }), /each SaaS line needs/],
+    [saasCo({ stack: [{ fn: 'crm', rent: '', users: 1 }] }), /each SaaS line needs/], [saasCo({ stack: [{ fn: 'crm', rent: 'x', users: -1 }] }), /each SaaS line needs/],
+    [saasCo({ stack: [{ fn: 'crm', rent: 'nope', users: 1 }] }), /crm: the prices have no subscription nope/], [saasCo({ stack: [{ fn: 'zz', rent: 'salesforce-pro-suite', users: 1 }] }), /zz: the organ map has no such function/],
+    [saasCo({ hardeningDays: { proven: -1 } }), /crm: hardening days for a proven organ/], [saasCo({ hardeningDays: { works: 60 } }), /crm: hardening days for a proven organ/],
+    [{ ...base, prices: { ...PRICES, saas: PRICES.saas.map((e) => ({ ...e, currency: 'EUR' })) } }, /cannot be priced in pounds/],
+  ]) assert.match(plan(m).why, re);
+  assert.match(plan({ ...base, prices: { ...PRICES, saas: undefined } }).why, /crm: the prices have no subscription salesforce-pro-suite/);
+  assert.match(plan({ ...base, prices: { ...PRICES, saas: [null] } }).why, /crm: the prices have no subscription/);
+  assert.match(plan({ ...base, organs: { functions: [null] } }).why, /crm: the organ map has no such function/);
 });
 
 test('sensitivity: what a CFO will push on, each scenario re-run through the whole plan', () => {
-  assert.deepEqual(LEVERS, ['timeSaved', 'wage', 'cpi', 'growth', 'watts']);
+  assert.deepEqual(LEVERS, ['timeSaved', 'wage', 'cpi', 'growth', 'watts', 'cutover', 'hardening']);
   const before = JSON.stringify(base);
   const s = sensitivity(base, COMPANY.sensitivity.scenarios);
   assert.equal(s.ok, true);
   assert.equal(JSON.stringify(base), before, 'the scenarios never change the input');
-  assert.deepEqual(s.base, { cloud: 10091333.82, local: 1276358.06, saving: 8814975.75, savingShare: 0.874, fte: 33.9, aiCost: 1701.74 });
+  assert.deepEqual(s.base, { cloud: 10887740.17, local: 1570065.26, saving: 9317674.91, savingShare: 0.856, fte: 33.9, aiCost: 1701.74 });
   const row = (id) => s.rows.find((r) => r.id === id);
   assert.deepEqual(s.rows.map((r) => [r.id, r.saving, r.savingShare, r.fte, r.aiCost, r.vsBase]), [
-    ['time-halved', 5165234.77, 0.802, 17, 1701.74, -3649740.98],
-    ['wage-median', 12812174.38, 0.909, 33.9, 1701.74, 3997198.63],
-    ['cpi-target', 8602143.44, 0.873, 33.9, 1659.8, -212832.31],
-    ['cpi-high', 9194223.77, 0.874, 33.9, 1776.48, 379248.02],
-    ['volume-flat', 6883605.98, 0.844, 33.9, 1251.37, -1931369.77],
-    ['watts-max', 8810437.79, 0.873, 33.9, 6239.71, -4537.96],
-    ['all-down', 4105153.76, 0.766, 17, 4488.55, -4709821.99],
+    ['time-halved', 5667933.92, 0.783, 17, 1701.74, -3649740.99],
+    ['wage-median', 13314873.54, 0.895, 33.9, 1701.74, 3997198.63],
+    ['cpi-target', 9087518.52, 0.855, 33.9, 1659.8, -230156.39],
+    ['cpi-high', 9727743.35, 0.857, 33.9, 1776.48, 410068.44],
+    ['volume-flat', 7386305.14, 0.825, 33.9, 1251.37, -1931369.77],
+    ['watts-max', 9313136.94, 0.855, 33.9, 6239.71, -4537.97],
+    ['cutover-late', 9163326.79, 0.842, 33.9, 1701.74, -154348.12],
+    ['hardening-double', 9173674.91, 0.843, 33.9, 1701.74, -144000],
+    ['all-down', 4293827.5, 0.7, 17, 4488.55, -5023847.41],
   ]);
   assert.deepEqual(row('wage-median').values, { wage: 19.67 });
-  assert.deepEqual(row('all-down').values, { timeSaved: 0.5, cpi: 0.02, growth: 0, watts: 55 });
-  assert.deepEqual([row('cpi-high').cloud, row('cpi-high').local], [10519210.99, 1324987.22]);
-  assert.equal(s.worst, 4105153.76);
+  assert.deepEqual(row('all-down').values, { timeSaved: 0.5, cpi: 0.02, growth: 0, watts: 55, cutover: 3, hardening: 2 });
+  assert.deepEqual([row('cpi-high').cloud, row('cpi-high').local], [11346437.77, 1618694.42]);
+  assert.equal(s.worst, 4293827.5);
   assert.deepEqual(sensitivity(base, []), { ok: true, base: s.base, rows: [], worst: null });
   // a lever by number, or by the path of a sourced figure
-  assert.equal(sensitivity(base, [{ id: 'w', set: { wage: 19.67 } }]).rows[0].saving, 12812174.38);
+  assert.equal(sensitivity(base, [{ id: 'w', set: { wage: 19.67 } }]).rows[0].saving, 13314873.54);
   assert.equal(sensitivity(base, [{ id: 'g', set: { growth: 'cpi.value' } }]).rows[0].values.growth, 0.031);
+  // hardening scales every rung and the shared records; a works rung keeps its own multiple
+  const hw = sensitivity(base, [{ id: 'h', set: { hardening: 0 } }]).rows[0];
+  assert.equal(hw.local, 1570065.26 - 144000);
+  assert.equal(sensitivity({ ...base, company: { ...COMPANY, saas: { ...COMPANY.saas, hardeningDays: { ...COMPANY.saas.hardeningDays, proven: 'x' } } } }, [{ id: 'h', set: { cutover: 2 } }]).why, 'crm: hardening days for a proven organ');
+  assert.equal(sensitivity({ ...base, company: { ...COMPANY, saas: { ...COMPANY.saas, syncDays: 'x' } } }, [{ id: 'h', set: { hardening: 2 } }]).why, 'company.saas: stack, cutoverYear, hardeningDays and syncDays');
   // no power, no ratio
   assert.equal(plan({ ...base, company: { ...COMPANY, floor: { ...COMPANY.floor, watts: { value: 0 } } } }).aiVsSeats, null);
   // refusals
   assert.match(sensitivity(base, 'x').why, /list of scenarios/);
   assert.match(sensitivity({}, []).why, /plan needs/);
+  assert.match(sensitivity(core, [{ id: 'c', set: { cutover: 3 } }]).why, /^c: the cutover and hardening levers need company.saas/);
+  assert.match(sensitivity({ ...base, company: { ...COMPANY, saas: { ...COMPANY.saas, hardeningDays: null } } }, [{ id: 'c', set: { hardening: 2 } }]).why, /^company.saas: stack/);
   for (const [sc, re] of [
     [null, /an id and at least one lever/], [{ set: { cpi: 0.02 } }, /an id and at least one lever/], [{ id: 'a' }, /an id and at least one lever/],
     [{ id: 'a', set: {} }, /an id and at least one lever/], [{ id: 'a', set: { seats: 2 } }, /a: seats is not a lever/],
     [{ id: 'a', set: { wage: 'wageMedian' } }, /a: wage must be a number or the path/], [{ id: 'a', set: { wage: 'nope.value' } }, /a: wage must be/],
     [{ id: 'a', set: { cpi: 'cpi.value.deeper' } }, /a: cpi must be/], [{ id: 'a', set: { cpi: '' } }, /a: cpi must be/], [{ id: 'a', set: { cpi: true } }, /a: cpi must be/],
     [{ id: 'a', set: { cpi: NaN } }, /a: cpi must be/], [{ id: 'a', set: { timeSaved: -1 } }, /^a: support: seconds of staff time saved/], [{ id: 'a', set: { cpi: 0.9 } }, /^a: prices need cpi/],
+    [{ id: 'a', set: { cutover: 0 } }, /^a: company.saas/],
   ]) assert.match(sensitivity(base, [{ id: 'ok', set: { cpi: 0.02 } }, sc]).why, re);
 });
 
-
 test('seatShareBreakEven: with the staff time on the bill, local-first is cheaper at any seat coverage', () => {
-  assert.deepEqual(seatShareBreakEven(base), { ok: true, share: -4.978, localAlwaysCheaper: true, cloudAlwaysCheaper: false });
-  const api = seatShareBreakEven({ ...base, choices: { corporate: 'seats+api' } });
+  assert.deepEqual(seatShareBreakEven(core), { ok: true, share: -4.978, localAlwaysCheaper: true, cloudAlwaysCheaper: false });
+  const api = seatShareBreakEven({ ...core, choices: { corporate: 'seats+api' } });
   assert.deepEqual(api, { ok: true, share: -0.032, localAlwaysCheaper: true, cloudAlwaysCheaper: false });
-  const noCloudTeam = seatShareBreakEven({ ...base, choices: { corporate: 'seats+api' }, company: { ...COMPANY, staff: { ...COMPANY.staff, cloud: [] } } });
+  const noCloudTeam = seatShareBreakEven({ ...core, choices: { corporate: 'seats+api' }, company: { ...CORE_CO, staff: { ...COMPANY.staff, cloud: [] } } });
   assert.equal(noCloudTeam.localAlwaysCheaper, false);
   assert.ok(noCloudTeam.share > 0 && noCloudTeam.share < 1);
-  const free = seatShareBreakEven({ ...base, prices: { ...PRICES, seats: PRICES.seats.map((s) => ({ ...s, price: 0 })) } });
+  const free = seatShareBreakEven({ ...core, prices: { ...PRICES, seats: PRICES.seats.map((s) => ({ ...s, price: 0 })) } });
   assert.deepEqual(free, { ok: true, share: null, why: 'seats add nothing to the corporate side' });
-  const tiny = (localDays) => ({ ...base, choices: { corporate: 'seats+api' }, company: { ...COMPANY, profile: { ...COMPANY.profile, knowledgeWorkers: 1 }, growth: { value: 0 }, workloads: [{ ...COMPANY.workloads[0], perMonth: 0 }, { ...COMPANY.workloads[2], perMonth: 0 }],
+  const tiny = (localDays) => ({ ...core, choices: { corporate: 'seats+api' }, company: { ...CORE_CO, profile: { ...COMPANY.profile, knowledgeWorkers: 1 }, growth: { value: 0 }, workloads: [{ ...COMPANY.workloads[0], perMonth: 0 }, { ...COMPANY.workloads[2], perMonth: 0 }],
     staff: { onCost: COMPANY.staff.onCost, local: [], cloud: [] }, compliance: { dayRate: { value: 1386 }, local: { daysYear1: localDays, daysPerYear: 0, why: 'w' }, cloud: { daysYear1: 0, daysPerYear: 0, why: 'w' } } },
     prices: { ...PRICES, cpi: { ...PRICES.cpi, value: 0 } } });
   assert.deepEqual(seatShareBreakEven(tiny(0)), { ok: true, share: 0, localAlwaysCheaper: true, cloudAlwaysCheaper: false });
   assert.deepEqual(seatShareBreakEven(tiny(1)), { ok: true, share: 1, localAlwaysCheaper: false, cloudAlwaysCheaper: false });
-  assert.match(seatShareBreakEven({ ...base, choices: { seat: 'nope' } }).why, /unknown seat/);
+  assert.match(seatShareBreakEven({ ...core, choices: { seat: 'nope' } }).why, /unknown seat/);
   assert.match(seatShareBreakEven({ company: COMPANY, prices: PRICES }).why, /plan needs/);
   assert.equal(seatShareBreakEven(null).why, 'seatShareBreakEven needs the same input as plan');
 });
 
 test('plan: refuses what it cannot stand behind', () => {
-  const C = (patch) => ({ ...base, company: { ...COMPANY, ...patch } });
-  const P = (patch) => ({ ...base, prices: { ...PRICES, ...patch } });
+  const C = (patch) => ({ ...core, company: { ...CORE_CO, ...patch } });
+  const P = (patch) => ({ ...core, prices: { ...PRICES, ...patch } });
   const need = 'plan needs company, prices and evidence';
   assert.equal(plan(null).why, need);
   assert.equal(plan({ company: COMPANY, prices: PRICES }).why, need);
   assert.equal(plan({ prices: PRICES, evidence: EVIDENCE }).why, need);
   assert.equal(plan({ company: COMPANY, evidence: EVIDENCE }).why, need);
-  assert.match(plan({ ...base, evidence: { ...EVIDENCE, hr: {} } }).why, /hr-routing: its evidence \(hr\) is missing/);
-  for (const k of ['tokensIn', 'tokensOut', 'laptopSecondsPerItem']) assert.match(plan({ ...base, evidence: { ...EVIDENCE, hr: { ...EVIDENCE.hr, [k]: undefined } } }).why, /hr-routing: its evidence/, k);
+  assert.match(plan({ ...core, evidence: { ...EVIDENCE, hr: {} } }).why, /hr-routing: its evidence \(hr\) is missing/);
+  for (const k of ['tokensIn', 'tokensOut', 'laptopSecondsPerItem']) assert.match(plan({ ...core, evidence: { ...EVIDENCE, hr: { ...EVIDENCE.hr, [k]: undefined } } }).why, /hr-routing: its evidence/, k);
   assert.match(plan(C({ workloads: [{ ...COMPANY.workloads[0], tokens: 'guess' }] })).why, /measured or estimate/);
   assert.match(plan(C({ workloads: [{ tokens: 'estimate', secondsSaved: 1 }] })).why, /needs an id/);
   assert.match(plan(C({ workloads: [null] })).why, /needs an id/);
@@ -301,8 +371,8 @@ test('plan: refuses what it cannot stand behind', () => {
   assert.equal(plan(C({ staff: { ...S, onCost: { value: 1 } } })).ok, true);
   for (const st of [null, { hoursPerFte: null }, { hoursPerFte: { value: 'x' } }, { hoursPerFte: { value: 0 } }]) assert.match(plan(C({ staffTime: st })).why, /hoursPerFte/);
   assert.match(plan(C({ workloads: COMPANY.workloads.map((w) => ({ ...w, reviewedFrom: w.reviewedFrom ? 'nope' : undefined })) })).why, /still goes to a person/);
-  for (const k of ['items', 'caught', 'wronglyFlagged']) assert.match(plan({ ...base, evidence: { ...EVIDENCE, security: { ...EVIDENCE.security, [k]: 'x' } } }).why, /still goes to a person/, k);
-  assert.match(plan({ ...base, evidence: { ...EVIDENCE, security: { ...EVIDENCE.security, items: 0 } } }).why, /still goes to a person/);
+  for (const k of ['items', 'caught', 'wronglyFlagged']) assert.match(plan({ ...core, evidence: { ...EVIDENCE, security: { ...EVIDENCE.security, [k]: 'x' } } }).why, /still goes to a person/, k);
+  assert.match(plan({ ...core, evidence: { ...EVIDENCE, security: { ...EVIDENCE.security, items: 0 } } }).why, /still goes to a person/);
   assert.match(plan(P({ salaries: {} })).why, /salaries/);
   assert.match(plan(P({ salaries: { roles: { ...PRICES.salaries.roles, 2134: { median: 'x' } } } })).why, /local staff/);
   assert.match(plan(C({ staff: { ...S, local: [null] } })).why, /local staff/);
@@ -334,7 +404,7 @@ test('plan: refuses what it cannot stand behind', () => {
   assert.equal(plan(C({ hardware: null })).tco.lines.find((l) => l.id === 'local-hardware').total, 0);
 });
 
-const WK = { flags: { personalData: true, interactsWithPublic: true, significantDecision: false, highRisk: false, euOutput: true } };
+const WK = { flags: { aiSystem: true, personalData: true, interactsWithPublic: true, significantDecision: false, highRisk: false, euOutput: true } };
 test('obligations: which duties apply, on which stack, and what the stack does to them', () => {
   const loc = obligations(WK, 'local', LAW.duties, { asOf: '2026-09-29', providerAbroad: true });
   const cl = obligations(WK, 'cloud', LAW.duties, { asOf: '2026-09-29', providerAbroad: true });
@@ -354,14 +424,14 @@ test('obligations: which duties apply, on which stack, and what the stack does t
   assert.equal(obligations(WK, 'local', LAW.duties, { asOf: '2026-08-01' }).items.find((i) => i.id === 'aia-50').inForce, false);
   assert.equal(obligations(WK, 'local', LAW.duties, { asOf: '2026-08-02' }).items.find((i) => i.id === 'aia-50').inForce, true);
   assert.equal(obligations(WK, 'local', LAW.duties, { asOf: '2026-09-29' }).items.some((i) => i.id === 'gdpr-44'), false);
-  const hr = obligations({ flags: { personalData: true, highRisk: true, creditScoring: true } }, 'local', LAW.duties, { asOf: '2026-09-29' });
+  const hr = obligations({ flags: { aiSystem: true, personalData: true, highRisk: true, creditScoring: true } }, 'local', LAW.duties, { asOf: '2026-09-29' });
   assert.equal(hr.items.find((i) => i.id === 'aia-highrisk').inForce, false);
   assert.equal(hr.items.find((i) => i.id === 'aia-highrisk').from, '2027-12-02');
   assert.ok(hr.items.some((i) => i.id === 'aia-27'));
-  assert.equal(obligations({ flags: {} }, 'local', LAW.duties, { asOf: '2026-09-29' }).applying, 2);
+  assert.equal(obligations({ flags: {} }, 'local', LAW.duties, { asOf: '2026-09-29' }).applying, 0);   // no AI system, no personal data: nothing applies
   assert.deepEqual(DEPLOYMENTS, ['local', 'cloud', 'saas']);
   assert.deepEqual(STATUSES, ['removed', 'eased', 'yours', 'shared', 'unchanged']);
-  const d0 = LAW.duties[0];
+  const d0 = LAW.duties.find((d) => d.id === 'gdpr-5');
   for (const [bad, re] of [[{ ...d0, appliesIf: 'sometimes' }, /malformed/], [{ ...d0, status: { local: 'gone' } }, /malformed/], [{ ...d0, from: '2026' }, /malformed/], [{ ...d0, url: 'http://x' }, /malformed/], [{ ...d0, checked: 'x' }, /malformed/], [{ ...d0, id: '' }, /malformed/], [{ ...d0, status: null }, /malformed/], [null, /malformed/]])
     assert.match(obligations(WK, 'local', [bad], { asOf: '2026-09-29' }).why, re);
   assert.equal(obligations(WK, 'local', [{ ...d0, note: 'x' }], { asOf: '2026-09-29' }).items[0].note, '');

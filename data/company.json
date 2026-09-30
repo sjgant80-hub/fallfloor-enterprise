@@ -56,6 +56,7 @@
    "secondsSaved": 60,
    "savedWhy": "Reading the ticket, choosing the team and topic, and drafting the reply — one minute is the floor even with Copilot open; the agent's approval stays on both sides and is not counted.",
    "flags": {
+    "aiSystem": true,
     "personalData": true,
     "interactsWithPublic": false,
     "significantDecision": false,
@@ -75,6 +76,7 @@
    "savedWhy": "Ten seconds to read a message and decide. Messages the model flags still go to a person, so only the share it clears counts (measured in fallfloor).",
    "reviewedFrom": "security",
    "flags": {
+    "aiSystem": true,
     "personalData": true,
     "interactsWithPublic": false,
     "significantDecision": false,
@@ -93,6 +95,7 @@
    "secondsSaved": 120,
    "savedWhy": "Reading a staff question and routing it to the right HR topic.",
    "flags": {
+    "aiSystem": true,
     "personalData": true,
     "interactsWithPublic": false,
     "significantDecision": false,
@@ -112,6 +115,7 @@
    "secondsSaved": 180,
    "savedWhy": "Keying the fields from an identity or address document; the analyst's confirmation stays on both sides and is not counted.",
    "flags": {
+    "aiSystem": true,
     "personalData": true,
     "interactsWithPublic": false,
     "significantDecision": false,
@@ -132,6 +136,7 @@
    "secondsSaved": 0,
    "savedWhy": "Not counted: Copilot seats give staff an assistant too, so this is where the two sides are like for like.",
    "flags": {
+    "aiSystem": true,
     "personalData": true,
     "interactsWithPublic": false,
     "significantDecision": false,
@@ -296,16 +301,77 @@
     "why": "Intel's Maximum Turbo Power for the chip."
    },
    {
+    "id": "cutover-late",
+    "label": "The owned apps take over a year later",
+    "set": {
+     "cutover": 3
+    },
+    "basis": "assumption",
+    "why": "Two years of rent on both sides before the organs take over."
+   },
+   {
+    "id": "hardening-double",
+    "label": "Hardening the owned apps takes twice as long",
+    "set": {
+     "hardening": 2
+    },
+    "basis": "assumption",
+    "why": "Double the engineering days for every organ and for the shared records."
+   },
+   {
     "id": "all-down",
-    "label": "Every downside at once: time halved, inflation at target, volumes flat, laptops at maximum power",
+    "label": "Every downside at once: time halved, inflation at target, volumes flat, laptops at maximum power, the owned apps a year late and twice the hardening",
     "set": {
      "timeSaved": 0.5,
      "cpi": "cpiTarget.value",
      "growth": 0,
-     "watts": "laptopPower.wattsHigh"
+     "watts": "laptopPower.wattsHigh",
+     "cutover": 3,
+     "hardening": 2
     },
     "basis": "assumption",
-    "why": "The four levers that shrink the saving, together."
+    "why": "The six levers that shrink the saving, together."
+   }
+  ]
+ },
+ "saas": {
+  "basis": "assumption",
+  "why": "The back office the bank rents per seat, where an estate organ covers the function. Prices from fallstack's registry; the organ and its rung on the ladder from fallstack's organ map and GitHub's record. Seat counts are floor-level assumptions; the functions no organ replaces (ticketing, e-signature, payroll) are left out of both sides.",
+  "cutoverYear": {
+   "value": 2,
+   "basis": "assumption",
+   "why": "Year 1 runs both: the rent is still paid while each organ is hardened and the records move; the organ takes over from year 2."
+  },
+  "hardeningDays": {
+   "proven": 40,
+   "works": 60,
+   "prototype": 90,
+   "basis": "assumption",
+   "why": "Engineering days to harden one organ for a 1,200-person bank — its named gaps, single sign-on, the bank's connectors, the migration — fewer for an organ further up the ladder. At the compliance day rate."
+  },
+  "syncDays": {
+   "value": 60,
+   "basis": "assumption",
+   "why": "Once, for all the replaced apps: the estate apps keep each browser's records locally today, so a shared, signed record across a team is built on the company's own mesh."
+  },
+  "stack": [
+   {
+    "fn": "crm",
+    "rent": "salesforce-pro-suite",
+    "users": 100,
+    "why": "Sales, relationship and marketing staff: about one in ten of the bank's people, on the cheapest paid Salesforce suite above the small-team Starter."
+   },
+   {
+    "fn": "finance",
+    "rent": "dynamics-365-finance",
+    "users": 20,
+    "why": "The finance team's full users, on the Microsoft ERP a Microsoft 365 bank would buy."
+   },
+   {
+    "fn": "hr",
+    "rent": "dynamics-365-human-resources",
+    "users": 12,
+    "why": "The HR team's full users; employee self-service not counted."
    }
   ]
  }

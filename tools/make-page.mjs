@@ -10,22 +10,22 @@ const K = await import(at('kernel.mjs').href);
 const strip = (src) => src.split('\n').filter((l) => !/^import .* from '\.\/[a-z]+\.mjs';$/.test(l) && !/^export \{[^}]*\};$/.test(l)).join('\n').replace(/^export /gm, '').trimEnd();
 // hash.mjs and dualmap.mjs keep their own helper names, so each runs in its own scope and hands back its exports
 const scoped = (f, names) => '// ── ' + f + ' (own scope) ──\nconst { ' + names.join(', ') + ' } = (() => {\n' + strip(read(f)) + '\nreturn { ' + names.join(', ') + ' };\n})();';
-const kernel = [scoped('hash.mjs', ['sha256', 'canon']), scoped('dualmap.mjs', ['decide', 'seal', 'verifyReceipt']), '// ── kernel.mjs ──\n' + strip(read('kernel.mjs'))].join('\n\n');
-const data = { company: json('data/company.json'), prices: json('sources/prices.json'), law: json('sources/law.json'), evidence: json('evidence/fallfloor.json'), design: json('data/design.json'), risks: json('data/risks.json').risks };
+const kernel = [scoped('hash.mjs', ['sha256', 'canon']), scoped('dualmap.mjs', ['decide', 'seal', 'verifyReceipt']), scoped('comply.mjs', ['DEPLOYMENTS', 'STATUSES', 'obligations']), '// ── kernel.mjs ──\n' + strip(read('kernel.mjs'))].join('\n\n');
+const data = { company: json('data/company.json'), prices: json('sources/prices.json'), law: json('law/law.json'), evidence: json('evidence/fallfloor.json'), design: json('data/design.json'), risks: json('data/risks.json').risks, organs: json('sources/organs.json') };
 
 // ── the generated headline (markdown) for README.md and llms.txt ──
 const gbp = (x) => '£' + Math.round(x).toLocaleString('en-GB');
 const pct = (x) => Math.round(x * 1000) / 10 + '%';
-const p = K.plan({ company: data.company, prices: data.prices, evidence: data.evidence });
+const p = K.plan({ company: data.company, prices: data.prices, evidence: data.evidence, organs: data.organs });
 const b = K.board(data.evidence, data.company.policy, data.evidence.finished);
 const o = K.obligations(data.company.workloads[0], 'local', data.law.duties, { asOf: data.law.checked, providerAbroad: true });
 if (!p.ok || !b.ok || !o.ok) { console.error('the kernel refused the committed inputs: ' + (p.why || b.why || o.why)); process.exit(1); }
 const L = [];
 const line = (id) => p.tco.lines.find((l) => l.id === id);
 const int = (x) => Math.round(x).toLocaleString('en-GB');
-const q = K.plan({ company: data.company, prices: data.prices, evidence: data.evidence, choices: { corporate: 'seats+api' } });
-const be = K.seatShareBreakEven({ company: data.company, prices: data.prices, evidence: data.evidence });
-const sens = K.sensitivity({ company: data.company, prices: data.prices, evidence: data.evidence }, data.company.sensitivity.scenarios);
+const q = K.plan({ company: data.company, prices: data.prices, evidence: data.evidence, organs: data.organs, choices: { corporate: 'seats+api' } });
+const be = K.seatShareBreakEven({ company: data.company, prices: data.prices, evidence: data.evidence, organs: data.organs });
+const sens = K.sensitivity({ company: data.company, prices: data.prices, evidence: data.evidence, organs: data.organs }, data.company.sensitivity.scenarios);
 if (!q.ok || !be.ok || !sens.ok) { console.error('the kernel refused the committed inputs: ' + (q.why || be.why || sens.why)); process.exit(1); }
 const y5 = p.tco.perYear[p.tco.perYear.length - 1];
 const hy = Math.floor(p.hoursPerYear / 1000) * 1000;
@@ -39,6 +39,7 @@ L.push('');
 L.push('- **' + gbp(line('cloud-staff-time').total) + ' of staff time freed** — ' + int(p.hoursPerYear) + ' hours a year, ' + Math.round(p.fte) + ' people\'s worth of work. ' + data.design.freed);
 L.push('- **The AI layer:** ' + gbp(p.seatCost) + ' of Copilot seats against ' + gbp(p.aiCost) + ' of modelled electricity (estimate: laptop-hours × ' + data.company.floor.watts.value + ' W × the DESNZ non-domestic rate) — ' + int(p.aiVsSeats) + '× less.');
 L.push('- **No new hardware.** Copilot runs on the laptops already on the desks; so does local-first.');
+L.push('- **The rented back office:** ' + p.saas.lines.map((x) => x.users + ' × ' + x.product).join(', ') + ' — ' + gbp(p.saas.rent) + ' of rent over five years, against ' + gbp(p.saas.local) + ' for the owned apps that replace them (' + p.saas.lines.filter((x) => x.replaced).map((x) => x.organName + ', ' + x.tier + ' on the ladder').join('; ') + '), rent paid until they take over in year ' + data.company.saas.cutoverYear.value + ' and the hardening included. Ticketing, e-signature and payroll are not replaced and stay on both sides.');
 L.push('- **' + data.design.dataClaim.claim + '** ' + data.design.dataClaim.how);
 L.push('');
 L.push('The modelled bank (' + int(data.company.profile.employees) + ' staff, ' + int(data.company.profile.knowledgeWorkers) + ' knowledge workers, UK with EU customers), five years, cash, net of VAT. Seats, teams, compliance, staff time and power rise with ONS CPI (' + pct(data.prices.cpi.value) + ', ' + data.prices.cpi.source + '); staff time is priced at the National Living Wage (£' + data.prices.wage.value + ' an hour, ' + data.prices.wage.source + ') × ' + data.company.staff.onCost.value + ' on-cost. ' + data.prices.risingCost.what + ' (' + data.prices.risingCost.source + ')');
@@ -50,6 +51,7 @@ L.push('| Staff time on the repetitive work (' + p.fte + ' people\'s worth) | ' 
 L.push('| The team that runs it (same size both sides) | ' + gbp(line('cloud-team').total) + ' | ' + gbp(line('local-team').total) + ' |');
 L.push('| Compliance work | ' + gbp(line('cloud-compliance').total) + ' | ' + gbp(line('local-compliance').total) + ' |');
 L.push('| New hardware | — | ' + gbp(line('local-hardware').total) + ' — the same laptops |');
+L.push('| Back-office SaaS (' + p.saas.lines.map((x) => x.product).join(', ') + ') | ' + gbp(p.saas.rent) + ' | ' + gbp(p.saas.local) + ' — owned apps from year ' + data.company.saas.cutoverYear.value + ' |');
 L.push('| Electricity for the AI work | — | ' + gbp(line('local-power').total) + ' |');
 L.push('| **Five years** | **' + gbp(p.tco.total.cloud) + '** | **' + gbp(p.tco.total.local) + '** |');
 L.push('| Year ' + y5.year + ' alone | ' + gbp(y5.cloud) + ' | ' + gbp(y5.local) + ' |');
@@ -63,7 +65,7 @@ L.push('| Scenario | Local-first saves, 5 years | Below Copilot |');
 L.push('|---|---|---|');
 L.push('| Base | ' + gbp(sens.base.saving) + ' | ' + pct(sens.base.savingShare) + ' |');
 const SC = Object.fromEntries(data.company.sensitivity.scenarios.map((s) => [s.id, s]));
-const shown = { timeSaved: (v) => 'staff time saved × ' + v, wage: (v) => 'wage £' + v + ' an hour', cpi: (v) => 'CPI ' + pct(v), growth: (v) => 'volume ' + pct(v) + ' a year', watts: (v) => 'laptops at ' + v + ' W' };
+const shown = { timeSaved: (v) => 'staff time saved × ' + v, wage: (v) => 'wage £' + v + ' an hour', cpi: (v) => 'CPI ' + pct(v), growth: (v) => 'volume ' + pct(v) + ' a year', watts: (v) => 'laptops at ' + v + ' W', cutover: (v) => 'owned apps from year ' + v, hardening: (v) => 'hardening × ' + v };
 for (const r of sens.rows) L.push('| ' + SC[r.id].label + ' (' + Object.entries(r.values).map(([k, v]) => shown[k](v)).join(', ') + ') | ' + gbp(r.saving) + ' | ' + pct(r.savingShare) + ' |');
 L.push('');
 L.push('What has to be true: ' + (be.localAlwaysCheaper ? 'nothing about seats — local-first costs less at any seat coverage, even with no Copilot seats at all, because the staff time on the work is on the corporate bill either way.' : 'local-first costs less once more than ' + pct(be.share) + ' of knowledge workers would otherwise get a seat.') + ' The floor carries the work at ' + pct(p.capacity.perYear[0].laptopUtil) + ' of the enrolled laptops in year 1 and ' + pct(p.capacity.perYear[p.capacity.perYear.length - 1].laptopUtil) + ' in year ' + p.capacity.perYear.length + '.');

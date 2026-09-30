@@ -4,7 +4,7 @@
  "freed": "Staff time freed, not a payroll cut. You get that many people's worth of work back. Grow without hiring, or cut the bill. Your call.",
  "dataClaim": {
   "claim": "No prompt, no customer record, nothing ever goes to an AI vendor.",
-  "how": "The inference route has no cloud model, no API-key route and no cloud fallback: the open model runs in the browser on each laptop's own GPU. The only outbound AI traffic is downloading the open model weights and the runtime — from Hugging Face, GitHub and jsDelivr in the evidence run, into a hash-pinned internal mirror in this design. A download carries nothing out. CI re-reads the code that produced the evidence on every push and fails if any other path appears."
+  "how": "The inference route has no cloud model, no API-key route and no cloud fallback: the open model runs in the browser on each laptop's own GPU. The only outbound AI traffic is downloading the open model weights and the runtime — from Hugging Face, GitHub and jsDelivr in the evidence run, into a hash-pinned internal mirror in this design. A download carries nothing out. CI re-reads the code that produced the evidence on every push and fails if any other path appears. The owned back-office apps (FallCRM Elite, FallLedger, FallHR) ship an optional bring-your-own-key route to a cloud model, off by default; this design leaves it off."
  },
  "case": [
   {

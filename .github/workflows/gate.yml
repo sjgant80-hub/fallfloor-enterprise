@@ -29,3 +29,19 @@ jobs:
 
       - name: the evidence re-derives from fallfloor's pinned, signed ledger
         run: node tools/evidence-from-fallfloor.mjs
+
+      - name: the basis — prices from fallstack's registry, the compliance kernel and law from fall-euaiact, this build's own map
+        run: |
+          mkdir -p /tmp/estate
+          git clone --quiet https://github.com/sjgant80-hub/fallstack /tmp/estate/fallstack
+          git -C /tmp/estate/fallstack checkout --quiet 4eeb828
+          git clone --quiet https://github.com/sjgant80-hub/fall-euaiact /tmp/estate/fall-euaiact
+          git -C /tmp/estate/fall-euaiact checkout --quiet d522314
+          node tools/pull-basis.mjs --check --from /tmp/estate
+          node /tmp/estate/fallstack/tools/price-check.mjs .
+          node /tmp/estate/fall-euaiact/tools/comply-build.mjs . --check
+
+      - name: the vendored compliance kernel is CLEAN here too
+        run: |
+          node tools/witness.mjs mutate comply.mjs --timeout 60000 --cap 900 --test node --test comply.test.mjs | tee comply.out || true
+          node -e "const b=require('fs').readFileSync('comply.out','utf8');const j=JSON.parse(b.slice(b.indexOf('{'),b.lastIndexOf('}')+1));if(j.clean!==true){console.error('COMPLY NOT CLEAN');process.exit(1)}console.log('CLEAN '+j.killed+'/'+j.total)"

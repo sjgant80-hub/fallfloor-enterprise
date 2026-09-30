@@ -1,0 +1,501 @@
+{
+ "_rule": "The verified law every estate build's compliance map is generated from. Each duty quotes its primary text, links it and gives the date checked; appliesIf names the facts (one or all of a list) a build must declare for the duty to apply; status says what each stack (local / cloud / saas) does to it. Shared by every build through comply.mjs; builds pull this file, they never retype it.",
+ "checked": "2026-09-30",
+ "instruments": {
+  "aia": {
+   "name": "EU AI Act — Regulation (EU) 2024/1689, as amended by Regulation (EU) 2026/1744 (Digital Omnibus on AI, OJ 24.7.2026, in force 27 July 2026)",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689",
+   "amendUrl": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744"
+  },
+  "gdpr": {
+   "name": "EU GDPR — Regulation (EU) 2016/679",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679"
+  },
+  "ukgdpr": {
+   "name": "UK GDPR, as amended by the Data (Use and Access) Act 2025 (data protection provisions in force 5 February 2026: SI 2026/82, regulation 2)",
+   "url": "https://www.legislation.gov.uk/eur/2016/679/contents",
+   "commencement": "https://www.legislation.gov.uk/uksi/2026/82/regulation/2"
+  }
+ },
+ "dates": [
+  {
+   "date": "2025-02-02",
+   "what": "AI Act Chapters I and II apply — including Article 4 (AI literacy) and the Article 5 prohibitions",
+   "ref": "Art 113, third para, point (a)",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744"
+  },
+  {
+   "date": "2026-02-05",
+   "what": "UK: Data (Use and Access) Act 2025 data protection provisions in force — including section 80 (new Articles 22A–22D on automated decision-making) and section 85 / Schedule 7 (international transfers)",
+   "ref": "SI 2026/82, reg 2(j), (m), (z9)",
+   "url": "https://www.legislation.gov.uk/uksi/2026/82/regulation/2"
+  },
+  {
+   "date": "2026-07-27",
+   "what": "Digital Omnibus on AI (Regulation (EU) 2026/1744) in force",
+   "ref": "Reg 2026/1744, Art 4",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744"
+  },
+  {
+   "date": "2026-08-02",
+   "what": "AI Act general date of application — including Article 50 transparency",
+   "ref": "Art 113, second para",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689"
+  },
+  {
+   "date": "2026-12-02",
+   "what": "AI Act Article 50(2) marking for generative systems already on the market before 2 August 2026; and the new Article 5(1) points (ba) and (bb)",
+   "ref": "Art 111(4) and Art 113, third para, point (a), as amended by Reg 2026/1744",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744"
+  },
+  {
+   "date": "2027-12-02",
+   "what": "AI Act high-risk obligations (Chapter III, Sections 1–3) for Annex III systems — moved from 2 August 2026 by the Digital Omnibus",
+   "ref": "Art 113, third para, point (c)(i), as replaced by Reg 2026/1744",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744"
+  },
+  {
+   "date": "2028-08-02",
+   "what": "AI Act high-risk obligations for Annex I (product-safety) systems",
+   "ref": "Art 113, third para, point (c)(ii), as replaced by Reg 2026/1744",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744"
+  }
+ ],
+ "duties": [
+  {
+   "id": "aia-5",
+   "regime": "EU AI Act",
+   "ref": "Art 5(1)",
+   "title": "Prohibited AI practices may not be placed on the market, put into service or used",
+   "quote": "The following AI practices shall be prohibited:",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689",
+   "checked": "2026-09-30",
+   "from": "2025-02-02",
+   "appliesIf": "prohibited",
+   "status": {
+    "local": "unchanged",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "Where it runs changes nothing: the practice itself is banned in the EU.",
+    "cloud": "Same.",
+    "saas": "Same."
+   }
+  },
+  {
+   "id": "aia-scope",
+   "regime": "EU AI Act",
+   "ref": "Art 2(1)(c)",
+   "title": "A UK company is in scope when its AI output is used in the EU",
+   "quote": "providers and deployers of AI systems that have their place of establishment or are located in a third country, where the output produced by the AI system is used in the Union",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689",
+   "checked": "2026-09-29",
+   "from": "2024-08-01",
+   "appliesIf": [
+    "aiSystem",
+    "euOutput"
+   ],
+   "status": {
+    "local": "unchanged",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "Where the model runs does not change scope; who uses the output does.",
+    "cloud": "Same.",
+    "saas": "Same."
+   }
+  },
+  {
+   "id": "aia-provider",
+   "regime": "EU AI Act",
+   "ref": "Art 3(3) and 3(11)",
+   "title": "Building an AI system for your own use makes you its provider",
+   "quote": "‘putting into service’ means the supply of an AI system for first use directly to the deployer or for own use in the Union for its intended purpose",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689",
+   "checked": "2026-09-29",
+   "from": "2024-08-01",
+   "appliesIf": "aiSystem",
+   "status": {
+    "local": "yours",
+    "cloud": "yours",
+    "saas": "shared"
+   },
+   "note": {
+    "local": "Local-first in-house systems: the company is provider and deployer. Plan for provider duties (for this design: Article 50 and AI literacy; full high-risk duties only if a high-risk use is added).",
+    "cloud": "An AI system the company builds on a cloud model API is still the company's system: provider and deployer.",
+    "saas": "A seat product (Copilot, ChatGPT, Claude): the vendor is the provider of its assistant; the company is the deployer."
+   }
+  },
+  {
+   "id": "aia-4",
+   "regime": "EU AI Act",
+   "ref": "Art 4 (as replaced by Reg 2026/1744)",
+   "title": "AI literacy",
+   "quote": "Providers and deployers of AI systems shall take measures to support the development of AI literacy of their staff and other persons dealing with the operation and use of AI systems on their behalf",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744",
+   "checked": "2026-09-29",
+   "from": "2025-02-02",
+   "appliesIf": "aiSystem",
+   "status": {
+    "local": "unchanged",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "Training plan in the operating model (Phase 0).",
+    "cloud": "Same duty.",
+    "saas": "Same duty."
+   }
+  },
+  {
+   "id": "aia-50",
+   "regime": "EU AI Act",
+   "ref": "Art 50(1)",
+   "title": "Tell people when they are talking to an AI",
+   "quote": "Providers shall ensure that AI systems intended to interact directly with natural persons are designed and developed in such a way that the natural persons concerned are informed that they are interacting with an AI system",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689",
+   "checked": "2026-09-29",
+   "from": "2026-08-02",
+   "appliesIf": [
+    "aiSystem",
+    "interactsWithPublic"
+   ],
+   "status": {
+    "local": "yours",
+    "cloud": "yours",
+    "saas": "shared"
+   },
+   "note": {
+    "local": "In force now. Applies to a customer-facing assistant; drafts that an agent sends as their own do not interact directly.",
+    "cloud": "Same — a support bot built on an API is the company's system.",
+    "saas": "The vendor designs its own assistant's disclosure."
+   }
+  },
+  {
+   "id": "aia-50-2",
+   "regime": "EU AI Act",
+   "ref": "Art 50(2); Art 111(4) as added by Reg 2026/1744",
+   "title": "Mark AI-generated audio, image, video or text as artificially generated, in a machine-readable format",
+   "quote": "Providers of AI systems, including general-purpose AI systems, generating synthetic audio, image, video or text content, shall ensure that the outputs of the AI system are marked in a machine-readable format and detectable as artificially generated or manipulated.",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689",
+   "checked": "2026-09-30",
+   "from": "2026-08-02",
+   "appliesIf": "generatesContent",
+   "status": {
+    "local": "unchanged",
+    "cloud": "unchanged",
+    "saas": "removed"
+   },
+   "note": {
+    "local": "Where the model runs changes nothing: the outputs carry the mark. Systems placed on the market before 2 August 2026 have until 2 December 2026 (Art 111(4)). Not required where the system only assists standard editing.",
+    "cloud": "Same.",
+    "saas": "The vendor, as provider, carries the marking duty for its outputs; the company does not strip the mark."
+   }
+  },
+  {
+   "id": "aia-highrisk",
+   "regime": "EU AI Act",
+   "ref": "Art 6(2), Annex III; Art 6(3) derogation; Art 113(c)(i)",
+   "title": "High-risk uses (e.g. creditworthiness, employment decisions) — from 2 December 2027",
+   "quote": "(b) AI systems intended to be used to evaluate the creditworthiness of natural persons or establish their credit score, with the exception of AI systems used for the purpose of detecting financial fraud",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689",
+   "checked": "2026-09-29",
+   "from": "2027-12-02",
+   "appliesIf": "highRisk",
+   "status": {
+    "local": "unchanged",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "Full provider duties (risk management, data governance, logging, human oversight, conformity) — the design keeps high-risk uses out of the first rollout.",
+    "cloud": "Same duties; a cloud model does not carry them for you.",
+    "saas": "Same for any high-risk use of the tool."
+   }
+  },
+  {
+   "id": "aia-26",
+   "regime": "EU AI Act",
+   "ref": "Art 26(2), 26(5), 26(6)",
+   "title": "Deployer duties for high-risk systems: human oversight, monitoring, logs kept at least six months",
+   "quote": "Deployers shall assign human oversight to natural persons who have the necessary competence, training and authority … keep the logs automatically generated by that high-risk AI system … of at least six months",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689",
+   "checked": "2026-09-29",
+   "from": "2027-12-02",
+   "appliesIf": "highRisk",
+   "status": {
+    "local": "eased",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "The signed hop ledger is the log, under the company's control. Financial institutions meet the monitoring and log duties through their financial-services governance (Art 26(5), (6)).",
+    "cloud": "Logs split between the company and the vendor.",
+    "saas": "Logs largely the vendor's."
+   }
+  },
+  {
+   "id": "aia-27",
+   "regime": "EU AI Act",
+   "ref": "Art 27(1)",
+   "title": "Fundamental rights impact assessment before deploying credit scoring",
+   "quote": "deployers of high-risk AI systems referred to in points 5 (b) and (c) of Annex III, shall perform an assessment of the impact on fundamental rights",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689",
+   "checked": "2026-09-29",
+   "from": "2027-12-02",
+   "appliesIf": "creditScoring",
+   "status": {
+    "local": "unchanged",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "Only if credit scoring is ever added.",
+    "cloud": "Same.",
+    "saas": "Same."
+   }
+  },
+  {
+   "id": "aia-99",
+   "regime": "EU AI Act",
+   "ref": "Art 99(3), 99(4)",
+   "title": "Fines",
+   "quote": "up to EUR 15 000 000 or, if the offender is an undertaking, up to 3 % of its total worldwide annual turnover for the preceding financial year, whichever is higher",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689",
+   "checked": "2026-09-29",
+   "from": "2025-08-02",
+   "appliesIf": [
+    "aiSystem",
+    "euOutput"
+   ],
+   "status": {
+    "local": "unchanged",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "Up to EUR 35 000 000 or 7 % for prohibited practices (Art 99(3)).",
+    "cloud": "Same.",
+    "saas": "Same."
+   }
+  },
+  {
+   "id": "gdpr-5",
+   "regime": "GDPR / UK GDPR",
+   "ref": "Art 5(1)(d), 5(2)",
+   "title": "Accuracy, and being able to prove compliance",
+   "quote": "accurate and, where necessary, kept up to date … The controller shall be responsible for, and be able to demonstrate compliance with, paragraph 1 (‘accountability’)",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679",
+   "checked": "2026-09-29",
+   "from": "2018-05-25",
+   "appliesIf": "personalData",
+   "status": {
+    "local": "eased",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "Accuracy is yours on every stack (the measured small models were not accurate enough to answer alone). Accountability is easier: every answer has a signed receipt the company holds.",
+    "cloud": "Evidence of what the model did sits partly with the vendor.",
+    "saas": "Evidence sits mostly with the vendor."
+   }
+  },
+  {
+   "id": "gdpr-6",
+   "regime": "GDPR / UK GDPR",
+   "ref": "Art 6(1)",
+   "title": "A lawful basis for each use",
+   "quote": "Processing shall be lawful only if and to the extent that at least one of the following applies",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679",
+   "checked": "2026-09-29",
+   "from": "2018-05-25",
+   "appliesIf": "personalData",
+   "status": {
+    "local": "unchanged",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "Where the model runs does not supply a lawful basis.",
+    "cloud": "Same.",
+    "saas": "Same."
+   }
+  },
+  {
+   "id": "gdpr-22",
+   "regime": "GDPR / UK GDPR",
+   "ref": "EU Art 22(1); UK Arts 22A–22D (DUAA 2025 s.80, in force 5 Feb 2026)",
+   "title": "Decisions based solely on automated processing",
+   "quote": "EU: “the right not to be subject to a decision based solely on automated processing … which produces legal effects … or similarly significantly affects him or her”. UK: safeguards must “enable the data subject to obtain human intervention … [and] to contest such decisions” (Art 22C(2))",
+   "url": "https://www.legislation.gov.uk/eur/2016/679/article/22C",
+   "checked": "2026-09-29",
+   "from": "2026-02-05",
+   "appliesIf": [
+    "personalData",
+    "significantDecision"
+   ],
+   "status": {
+    "local": "unchanged",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "The design keeps a person meaningfully in every significant decision.",
+    "cloud": "Same.",
+    "saas": "Same."
+   }
+  },
+  {
+   "id": "gdpr-25",
+   "regime": "GDPR / UK GDPR",
+   "ref": "Art 25(1)",
+   "title": "Data protection by design and by default",
+   "quote": "the controller shall, both at the time of the determination of the means for processing and at the time of the processing itself, implement appropriate technical and organisational measures",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679",
+   "checked": "2026-09-29",
+   "from": "2018-05-25",
+   "appliesIf": "personalData",
+   "status": {
+    "local": "eased",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "The strongest minimisation there is: the prompt and the answer never leave the company's machines.",
+    "cloud": "Minimise what is sent; rely on the vendor's retention terms.",
+    "saas": "Rely on the vendor's settings and terms."
+   }
+  },
+  {
+   "id": "gdpr-28",
+   "regime": "GDPR / UK GDPR",
+   "ref": "Art 28(1)",
+   "title": "Processor contracts and due diligence",
+   "quote": "Where processing is to be carried out on behalf of a controller, the controller shall use only processors providing sufficient guarantees",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679",
+   "checked": "2026-09-29",
+   "from": "2018-05-25",
+   "appliesIf": "personalData",
+   "status": {
+    "local": "removed",
+    "cloud": "shared",
+    "saas": "shared"
+   },
+   "note": {
+    "local": "No third party processes the prompts or answers, so there is no AI processor to contract, audit or monitor for inference.",
+    "cloud": "The model vendor is a processor: contract, due diligence, sub-processor list, ongoing review.",
+    "saas": "The seat vendor is a processor: the same work."
+   }
+  },
+  {
+   "id": "gdpr-32",
+   "regime": "GDPR / UK GDPR",
+   "ref": "Art 32(1)",
+   "title": "Security of processing",
+   "quote": "the controller and the processor shall implement appropriate technical and organisational measures to ensure a level of security appropriate to the risk",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679",
+   "checked": "2026-09-29",
+   "from": "2018-05-25",
+   "appliesIf": "personalData",
+   "status": {
+    "local": "yours",
+    "cloud": "shared",
+    "saas": "shared"
+   },
+   "note": {
+    "local": "All of it is in-house: encrypted laptops, the always-on machines that hold the desk and the receipts, access control, the model supply chain (hash-pinned weights).",
+    "cloud": "Split with the vendor under its terms.",
+    "saas": "Split with the vendor under its terms."
+   }
+  },
+  {
+   "id": "gdpr-35",
+   "regime": "GDPR / UK GDPR",
+   "ref": "Art 35(1); ICO list of high-risk processing",
+   "title": "Data protection impact assessment",
+   "quote": "ICO: “Innovative technology: processing involving the use of innovative technologies, or the novel application of existing technologies (including AI). A DPIA is required where this processing is combined with any of the criteria from the European guidelines.”",
+   "url": "https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/when-do-we-need-to-do-a-dpia/",
+   "checked": "2026-09-29",
+   "from": "2018-05-25",
+   "appliesIf": "personalData",
+   "status": {
+    "local": "unchanged",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "Plan a DPIA per workload in Phase 0; the local design removes the transfer and processor risks from it.",
+    "cloud": "Same, plus transfer and processor risks.",
+    "saas": "Same, plus transfer and processor risks."
+   }
+  },
+  {
+   "id": "gdpr-44",
+   "regime": "GDPR / UK GDPR",
+   "ref": "EU Art 44; UK Chapter V as amended by DUAA 2025 s.85 and Sch 7 (in force 5 Feb 2026)",
+   "title": "Transfers outside the UK / EEA",
+   "quote": "Any transfer of personal data which are undergoing processing or are intended for processing after transfer to a third country … shall take place only if … the conditions laid down in this Chapter are complied with",
+   "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679",
+   "checked": "2026-09-29",
+   "from": "2018-05-25",
+   "appliesIf": [
+    "personalData",
+    "providerAbroad"
+   ],
+   "status": {
+    "local": "removed",
+    "cloud": "shared",
+    "saas": "shared"
+   },
+   "note": {
+    "local": "No personal data leaves the building for inference, so there is no transfer to assess.",
+    "cloud": "If the model runs outside the UK/EEA: an adequacy route or safeguards, and a transfer risk assessment.",
+    "saas": "Same, unless the vendor contracts UK/EU data residency."
+   }
+  },
+  {
+   "id": "ico-ai",
+   "regime": "Guidance",
+   "ref": "ICO, Guidance on AI and data protection (updated 15 March 2023; under review after the DUAA)",
+   "title": "The UK regulator's AI guidance",
+   "quote": "Due to changes made by the Data (Use and Access) Act, this guidance is under review and may be subject to change.",
+   "url": "https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/artificial-intelligence/guidance-on-ai-and-data-protection/",
+   "checked": "2026-09-29",
+   "from": "2023-03-15",
+   "appliesIf": "personalData",
+   "status": {
+    "local": "unchanged",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "Follow it; watch for the post-DUAA revision.",
+    "cloud": "Same.",
+    "saas": "Same."
+   }
+  },
+  {
+   "id": "edpb-28",
+   "regime": "Guidance",
+   "ref": "EDPB Opinion 28/2024 (adopted 18 December 2024)",
+   "title": "Personal data in AI model development",
+   "quote": "Opinion 28/2024 on certain data protection aspects related to the processing of personal data in the context of AI models",
+   "url": "https://www.edpb.europa.eu/our-work-tools/our-documents/opinion-board-art-64/opinion-282024-certain-data-protection-aspects_en",
+   "checked": "2026-09-29",
+   "from": "2024-12-18",
+   "appliesIf": "trainsOnPersonalData",
+   "status": {
+    "local": "unchanged",
+    "cloud": "unchanged",
+    "saas": "unchanged"
+   },
+   "note": {
+    "local": "Relevant only if the company fine-tunes models on personal data; this design does not in the first rollout.",
+    "cloud": "Same.",
+    "saas": "Same."
+   }
+  }
+ ]
+}

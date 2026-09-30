@@ -11,12 +11,13 @@ A **reference design** for a **modelled** company — a UK digital bank with EU 
 
 You already own the computers. You already employ the people. Why rent an AI seat for every head? We build the AI into the work itself. Same machines, same workforce, no per-seat licence, and the software belongs to you.
 
-**Copilot on every desk: £10,091,334 over five years. Local-first on the laptops already owned: £1,276,358. £8,814,976 less (87.4%).**
+**Copilot on every desk: £10,887,740 over five years. Local-first on the laptops already owned: £1,570,065. £9,317,675 less (85.6%).**
 
 - **£7,299,482 of staff time freed** — 61,067 hours a year, 34 people's worth of work. Staff time freed, not a payroll cut. You get that many people's worth of work back. Grow without hiring, or cut the bill. Your call.
 - **The AI layer:** £1,474,637 of Copilot seats against £1,702 of modelled electricity (estimate: laptop-hours × 15 W × the DESNZ non-domestic rate) — 867× less.
 - **No new hardware.** Copilot runs on the laptops already on the desks; so does local-first.
-- **No prompt, no customer record, nothing ever goes to an AI vendor.** The inference route has no cloud model, no API-key route and no cloud fallback: the open model runs in the browser on each laptop's own GPU. The only outbound AI traffic is downloading the open model weights and the runtime — from Hugging Face, GitHub and jsDelivr in the evidence run, into a hash-pinned internal mirror in this design. A download carries nothing out. CI re-reads the code that produced the evidence on every push and fails if any other path appears.
+- **The rented back office:** 100 × Salesforce Pro Suite, 20 × Dynamics 365 Finance, 12 × Dynamics 365 Human Resources — £796,406 of rent over five years, against £293,707 for the owned apps that replace them (FallCRM Elite, proven on the ladder; FallLedger, proven on the ladder; FallHR, proven on the ladder), rent paid until they take over in year 2 and the hardening included. Ticketing, e-signature and payroll are not replaced and stay on both sides.
+- **No prompt, no customer record, nothing ever goes to an AI vendor.** The inference route has no cloud model, no API-key route and no cloud fallback: the open model runs in the browser on each laptop's own GPU. The only outbound AI traffic is downloading the open model weights and the runtime — from Hugging Face, GitHub and jsDelivr in the evidence run, into a hash-pinned internal mirror in this design. A download carries nothing out. CI re-reads the code that produced the evidence on every push and fails if any other path appears. The owned back-office apps (FallCRM Elite, FallLedger, FallHR) ship an optional bring-your-own-key route to a cloud model, off by default; this design leaves it off.
 
 The modelled bank (1,200 staff, 1,000 knowledge workers, UK with EU customers), five years, cash, net of VAT. Seats, teams, compliance, staff time and power rise with ONS CPI (3.1%, https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/consumerpriceinflation/august2026); staff time is priced at the National Living Wage (£12.71 an hour, https://www.gov.uk/government/news/national-living-wage-increases-to-1271-per-hour) × 1.3 on-cost. Microsoft's 1 July 2026 update raised Microsoft 365 plan prices — from 5% (Microsoft 365 E5, US$57 to US$60) to 33% (Microsoft 365 F1, US$2.25 to US$3.00). Microsoft 365 Copilot is not among the plans in that price table: the Copilot seat on this page is Microsoft's current UK list price. (https://www.microsoft.com/en-us/licensing/news/2026-m365-packaging-pricing-updates)
 
@@ -27,29 +28,32 @@ The modelled bank (1,200 staff, 1,000 knowledge workers, UK with EU customers), 
 | The team that runs it (same size both sides) | £1,190,819 | £1,190,819 |
 | Compliance work | £126,395 | £83,837 |
 | New hardware | — | £0 — the same laptops |
+| Back-office SaaS (Salesforce Pro Suite, Dynamics 365 Finance, Dynamics 365 Human Resources) | £796,406 | £293,707 — owned apps from year 2 |
 | Electricity for the AI work | — | £1,702 |
-| **Five years** | **£10,091,334** | **£1,276,358** |
-| Year 5 alone | £2,582,698 | £266,947 |
-| Share resting on estimates or assumptions | 85.4% | 100% |
+| **Five years** | **£10,887,740** | **£1,570,065** |
+| Year 5 alone | £2,751,850 | £266,947 |
+| Share resting on estimates or assumptions | 79.1% | 90.5% |
 
-"We'll automate it with a cloud API instead": That is the route where customer data leaves the building: a processor contract with the model vendor (GDPR Art 28), transfer assessments (Chapter V), a per-token bill — and the Copilot seats are still on every desk. Five years on that route: £2,798,864 — still £1,522,506 more than local-first.
+"We'll automate it with a cloud API instead": That is the route where customer data leaves the building: a processor contract with the model vendor (GDPR Art 28), transfer assessments (Chapter V), a per-token bill — and the Copilot seats are still on every desk. Five years on that route: £3,595,271 — still £2,025,205 more than local-first.
 
 Sensitivity — each row re-runs the whole plan through the kernel:
 
 | Scenario | Local-first saves, 5 years | Below Copilot |
 |---|---|---|
-| Base | £8,814,976 | 87.4% |
-| Staff time saved per item halved (staff time saved × 0.5) | £5,165,235 | 80.2% |
-| People's time at the ONS median hourly wage, not the National Living Wage (wage £19.67 an hour) | £12,812,174 | 90.9% |
-| Inflation at the Bank of England's target (CPI 2%) | £8,602,143 | 87.3% |
-| Inflation high (CPI 5%) | £9,194,224 | 87.4% |
-| Volumes flat — no growth at all (volume 0% a year) | £6,883,606 | 84.4% |
-| Laptops drawing their maximum turbo power the whole time (laptops at 55 W) | £8,810,438 | 87.3% |
-| Every downside at once: time halved, inflation at target, volumes flat, laptops at maximum power (staff time saved × 0.5, CPI 2%, volume 0% a year, laptops at 55 W) | £4,105,154 | 76.6% |
+| Base | £9,317,675 | 85.6% |
+| Staff time saved per item halved (staff time saved × 0.5) | £5,667,934 | 78.3% |
+| People's time at the ONS median hourly wage, not the National Living Wage (wage £19.67 an hour) | £13,314,874 | 89.5% |
+| Inflation at the Bank of England's target (CPI 2%) | £9,087,519 | 85.5% |
+| Inflation high (CPI 5%) | £9,727,743 | 85.7% |
+| Volumes flat — no growth at all (volume 0% a year) | £7,386,305 | 82.5% |
+| Laptops drawing their maximum turbo power the whole time (laptops at 55 W) | £9,313,137 | 85.5% |
+| The owned apps take over a year later (owned apps from year 3) | £9,163,327 | 84.2% |
+| Hardening the owned apps takes twice as long (hardening × 2) | £9,173,675 | 84.3% |
+| Every downside at once: time halved, inflation at target, volumes flat, laptops at maximum power, the owned apps a year late and twice the hardening (staff time saved × 0.5, CPI 2%, volume 0% a year, laptops at 55 W, owned apps from year 3, hardening × 2) | £4,293,828 | 70% |
 
 What has to be true: nothing about seats — local-first costs less at any seat coverage, even with no Copilot seats at all, because the staff time on the work is on the corporate bill either way. The floor carries the work at 16.9% of the enrolled laptops in year 1 and 29.6% in year 5.
 
-Compliance (customer-support triage, local-first vs a cloud API, as of 2026-09-29): local-first **removes** processor contracts and due diligence (Art 28(1)) and transfers outside the UK / EEA (EU Art 44; UK Chapter V as amended by DUAA 2025 s.85 and Sch 7 (in force 5 Feb 2026)) for inference; it **keeps with the company** 8 duties, including a lawful basis, a DPIA, accuracy, security and the AI Act provider duties for systems it builds. EU AI Act high-risk (Annex III) duties apply from 2 December 2027 after the Digital Omnibus (Regulation (EU) 2026/1744); Article 50 transparency has applied since 2 August 2026.
+Compliance (customer-support triage, local-first vs a cloud API, as of 2026-09-30): local-first **removes** processor contracts and due diligence (Art 28(1)) and transfers outside the UK / EEA (EU Art 44; UK Chapter V as amended by DUAA 2025 s.85 and Sch 7 (in force 5 Feb 2026)) for inference; it **keeps with the company** 8 duties, including a lawful basis, a DPIA, accuracy, security and the AI Act provider duties for systems it builds. EU AI Act high-risk (Annex III) duties apply from 2 December 2027 after the Digital Omnibus (Regulation (EU) 2026/1744); Article 50 transparency has applied since 2 August 2026.
 
 Go / no-go board, sealed from fallfloor's receipted evidence: 2 PASS · 2 BLOCK · 3 PENDING (support-unsupervised BLOCK, support-assisted PENDING, screening-auto BLOCK, screening-review PENDING, hr-routing PASS, floor-async PASS, credit-decisions PENDING). Board hash `d9b92b13d58c089eceaadfde00ae06ad8153be55b21c195b41c0e6f9dabef406`.
 <!-- ⟦RESULTS-END⟧ -->
@@ -67,6 +71,7 @@ Every duty on the page quotes its primary text, links it, and gives the date it 
 - **No new hardware.** Copilot runs on the laptops already on the desks, and so does local-first; hardware is the same on both sides and cancels. Local-first's only extra running cost is the electricity for the AI work.
 - **The floor** — the laptops the company already owns, enrolled as AI nodes (WebGPU in Chrome or Edge) running Qwen2.5-1.5B-Instruct (Apache 2.0). Triage, screening and HR routing: seconds per item **measured** in fallfloor.
 - **Heavier jobs, same machines** — KYC extraction and the staff knowledge assistant run on the same floor as queued jobs, sized from per-token rates **fitted** to the measured runs (about half a minute per KYC document, about a minute per answer). Phase 1 measures them on the bank's own documents.
+- **The rented back office** — Salesforce, Dynamics 365 Finance and Dynamics 365 Human Resources, priced at list from the estate registry ([fallstack](https://sjgant80-hub.github.io/fallstack/)), against the estate organs that replace them — FallCRM Elite, FallLedger, FallHR — each with its rung on the ladder read from GitHub's record. Year 1 pays the rent while each app is hardened; the apps take over from year 2. Ticketing, e-signature and payroll are not replaced and stay on both sides.
 - **The mesh, the desk and the receipts** — peer-to-peer WebRTC inside the LAN; a desk on an always-on machine the company already runs; at-least-once delivery with de-duplication; every step signed (Ed25519), hash-linked and replicated across nodes.
 - **The gates** — deterministic output gates, and a dual-map go/no-go gate on every deployment decision.
 - **One door out** — for model weights only, into a hash-pinned mirror.
@@ -80,6 +85,7 @@ Method: **Gary W. Floyd, Lumiea Systems Research Division — ThunderStruck Serv
 ## Check it yourself
 
 ```
+node tools/pull-basis.mjs --check           # prices, organs, comply.mjs and the law match fallstack and fall-euaiact
 node --test                                   # kernel, dual-map and hash tests
 node tools/witness.mjs mutate kernel.mjs --timeout 60000 --cap 900 --test node --test kernel.test.mjs   # mutation gate
 node tools/make-page.mjs && git diff --exit-code index.html README.md llms.txt                                # the page IS this kernel
@@ -89,10 +95,14 @@ node tools/evidence-from-fallfloor.mjs        # the evidence re-derives from fal
 
 CI runs all of them on every push. `evidence-from-fallfloor.mjs` fetches fallfloor's summary, signed ledger and kernel at commit e4d3b91 and re-derives every measured number this design uses; a single difference fails the build.
 
+## The basis: prices from the registry, a compliance map of its own
+
+No price in this repository is typed. `prices.lock.json` holds the registry entries this cost case uses, pulled from [fallstack](https://sjgant80-hub.github.io/fallstack/); `sources/prices.json` and `sources/organs.json` are generated from it by `tools/pull-basis.mjs`. The compliance map on the page runs [fall-euaiact](https://sjgant80-hub.github.io/fall-euaiact/)'s compliance kernel (`comply.mjs`, with its tests and `law/law.json`, verbatim). This page has its own map too: [compliance.html](compliance.html). CI checks all of it against both repositories at pinned commits, and konomify's basis gate checks it on every build.
+
 ## Sources
 
 - Prices (checked 2026-09-29): [Microsoft 365 Copilot](https://www.microsoft.com/en-gb/microsoft-365-copilot/enterprise), [ChatGPT Business](https://chatgpt.com/pricing/), [Claude](https://claude.com/pricing), [OpenAI API](https://developers.openai.com/api/docs/pricing), [Gemini API](https://ai.google.dev/gemini-api/docs/pricing), [Anthropic API](https://platform.claude.com/docs/en/about-claude/pricing), [ONS CPI, August 2026](https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/consumerpriceinflation/august2026), [National Living Wage](https://www.gov.uk/government/news/national-living-wage-increases-to-1271-per-hour), [Microsoft 365 price update, 1 July 2026](https://www.microsoft.com/en-us/licensing/news/2026-m365-packaging-pricing-updates), [ONS ASHE 2025 median hourly earnings](https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/bulletins/annualsurveyofhoursandearnings/2025), [Bank of England inflation target](https://www.bankofengland.co.uk/monetary-policy/inflation), [DESNZ Quarterly Energy Prices, September 2026](https://assets.publishing.service.gov.uk/media/6aba2810fe72ed1e2b02f0e7/Quarterly_Energy_Prices_September_2026.pdf), [ONS ASHE 2025 Table 14](https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/occupation4digitsoc2010ashetable14), [ECB reference rates](https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml), [UK VAT rates](https://www.gov.uk/vat-rates). All in `sources/prices.json`.
-- Law (checked 2026-09-29): [EU AI Act](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689), [Digital Omnibus on AI](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744), [EU GDPR](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679), [UK GDPR Art 22C](https://www.legislation.gov.uk/eur/2016/679/article/22C), [SI 2026/82](https://www.legislation.gov.uk/uksi/2026/82/regulation/2), [ICO DPIA list](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/when-do-we-need-to-do-a-dpia/), [ICO AI guidance](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/artificial-intelligence/guidance-on-ai-and-data-protection/), [EDPB Opinion 28/2024](https://www.edpb.europa.eu/our-work-tools/our-documents/opinion-board-art-64/opinion-282024-certain-data-protection-aspects_en). All in `sources/law.json`.
+- Law (checked 2026-09-29): [EU AI Act](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689), [Digital Omnibus on AI](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32026R1744), [EU GDPR](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679), [UK GDPR Art 22C](https://www.legislation.gov.uk/eur/2016/679/article/22C), [SI 2026/82](https://www.legislation.gov.uk/uksi/2026/82/regulation/2), [ICO DPIA list](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/when-do-we-need-to-do-a-dpia/), [ICO AI guidance](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/artificial-intelligence/guidance-on-ai-and-data-protection/), [EDPB Opinion 28/2024](https://www.edpb.europa.eu/our-work-tools/our-documents/opinion-board-art-64/opinion-282024-certain-data-protection-aspects_en). All in `law/law.json`, pulled verbatim from [fall-euaiact](https://github.com/sjgant80-hub/fall-euaiact), the estate compliance kernel.
 - Assumptions (volumes, seconds of staff time per item, team sizes, compliance days, day rate, laptop watts, the enrolled share of the floor): `data/company.json`, each labelled and changeable on the page.
 
 ## Credits

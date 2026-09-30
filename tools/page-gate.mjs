@@ -56,6 +56,13 @@ const P = JSON.parse(read('sources/prices.json'));
 const src = (x, what) => check(x && HTTPS.test(x.source || '') && DATE.test(x.checked || ''), what + ' lacks an https source or a checked date');
 for (const s of P.seats) { src(s, 'seat ' + s.id); check(['excluded', 'included', 'not stated'].includes(s.vat), 'seat ' + s.id + ': VAT treatment'); check(typeof s.quote === 'string' && s.quote.length > 5, 'seat ' + s.id + ': the quoted price text'); }
 for (const a of P.api) src(a, 'API price ' + a.id);
+for (const e of P.saas) { src(e, 'SaaS price ' + e.id); check(typeof e.registry === 'string', 'SaaS price ' + e.id + ' must name its registry entry'); }
+check(P.saasRise && typeof P.saasRise.quote === 'string', 'the SaaS price-rise evidence');
+check(existsSync(join(root, 'prices.lock.json')), 'prices.lock.json is missing — prices come from the fallstack registry');
+check(existsSync(join(root, 'compliance.html')) && existsSync(join(root, 'compliance.json')) && existsSync(join(root, 'compliance.decl.json')), 'the compliance map of this build is missing');
+check(markup.includes('href="compliance.html"'), 'the page must link its own compliance map');
+const ORG = JSON.parse(read('sources/organs.json'));
+check(Array.isArray(ORG.functions) && ORG.functions.every((x) => x.replaced === false ? typeof x.why === 'string' : ['prototype', 'works', 'proven'].includes(x.tier)), 'the organ map: every replaced function carries its ladder rung, every kept one its reason');
 for (const k of ['fx', 'vatRate', 'cpi', 'wage', 'risingCost', 'wageMedian', 'cpiTarget', 'electricity', 'laptopPower', 'salaries']) src(P[k], k);
 check(/not among the plans/.test(P.risingCost.what), 'the Microsoft rise must say Copilot is not among the plans it raised');
 const EV = JSON.parse(read('evidence/fallfloor.json')), BD = EV.boundary;
@@ -65,7 +72,7 @@ check(CS && Array.isArray(CS.scenarios) && CS.scenarios.length >= 4 && CS.scenar
 for (const k of ['cpi', 'wage']) check(typeof P[k].quote === 'string' && P[k].quote.length > 10 && typeof P[k].value === 'number', k + ': the quoted figure and its value');
 check(P.risingCost.low > 0 && P.risingCost.high >= P.risingCost.low && typeof P.risingCost.what === 'string', 'the rising-cost evidence: low, high and what it says');
 check(!('coreNode' in P), 'no core nodes: local-first runs on the laptops already owned');
-const LAW = JSON.parse(read('sources/law.json'));
+const LAW = JSON.parse(read('law/law.json'));
 for (const d of LAW.duties) { check(HTTPS.test(d.url || '') && DATE.test(d.checked || '') && DATE.test(d.from || ''), 'duty ' + d.id + ': url, checked and from'); check(typeof d.quote === 'string' && d.quote.length > 20, 'duty ' + d.id + ': the quoted text'); }
 for (const d of LAW.dates) check(DATE.test(d.date) && HTTPS.test(d.url || ''), 'date ' + d.date + ': source');
 const C = JSON.parse(read('data/company.json'));
@@ -88,4 +95,4 @@ try { const m = JSON.parse(read('manifest.webmanifest')); check(m.name && m.star
 check(read('README.md').split('\n').slice(0, 4).join('\n').includes('https://sjgant80-hub.github.io/fallfloor-enterprise/'), 'the live URL is not at the top of the README');
 
 if (fails.length) { console.error('PAGE GATE FAILED (' + fails.length + '):\n  ' + fails.join('\n  ')); process.exit(1); }
-console.log('page gate CLEAN — ' + staticIds.size + ' ids, ' + [...markup.matchAll(/<button/g)].length + ' buttons wired, ' + defined.size + ' CSS variables, ' + scripts.length + ' scripts parse, ' + (P.seats.length + P.api.length + 10) + ' prices/figures and ' + LAW.duties.length + ' duties sourced and dated');
+console.log('page gate CLEAN — ' + staticIds.size + ' ids, ' + [...markup.matchAll(/<button/g)].length + ' buttons wired, ' + defined.size + ' CSS variables, ' + scripts.length + ' scripts parse, ' + (P.seats.length + P.api.length + P.saas.length + 10) + ' prices/figures and ' + LAW.duties.length + ' duties sourced and dated');
